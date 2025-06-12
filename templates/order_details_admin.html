@@ -1,0 +1,124 @@
+{% extends 'admin_home.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    img {
+            border-radius: 10px;
+            max-width: 75px;
+        }
+</style>
+
+<div class="container">
+    <div class="card shadow-lg p-4 border-0 rounded-4">
+        <h2 class="text-primary mb-4">ORDER DETAILS</h2>
+
+        <div class="mb-4">
+            <p><strong>Order ID:</strong> <span class="text-primary">#{{ order.order_id }}</span></p>
+            <p><strong>User:</strong> <span class="fw-semibold">{{ order.user.username }}</span></p>
+            <p><strong>Date:</strong> <span class="text-muted">{{ order.date|date:"M d, Y, h:i A" }}</span></p>
+            <p><strong>Total:</strong> <span class="fw-bold fs-5 text-success">Rs. {{ order.total }}</span></p>
+            <p><strong>Payment Method:</strong> <span class="fw-semibold">{{ order.payment_method }}</span></p>
+        </div>
+
+        <!-- Status Update Form -->
+        <form method="post" class="mb-4">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-6">
+                    <label for="status" class="fw-semibold">Order Status:</label>
+                    <select name="status" id="status" class="form-select form-select-sm rounded-pill border-0 shadow-sm p-2">
+                        {% for value, label in order.STATUS_CHOICES %}
+                            <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="payment_status" class="fw-semibold">Payment Status:</label>
+                    <select name="payment_status" id="payment_status" class="form-select form-select-sm rounded-pill border-0 shadow-sm p-2">
+                        {% for value, label in order.PAYMENT_STATUS_CHOICES %}
+                            <option value="{{ value }}" {% if order.payment_status == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-6">
+                    <h4 class="mt-4 text-muted font-weight-bold">Shipping Address</h4>
+                    {% if order_address %}
+                    <div class="card shadow-sm p-3 mb-4 rounded">
+                        <p><strong>{{ order_address.full_name }}</strong></p>
+                        <p>{{ order_address.address }}, {{ order_address.district }}, {{ order_address.state }}</p>
+                        <p>{{ order_address.country }} - {{ order_address.zipcode }}</p>
+                    </div>
+                    {% else %}
+                    <p class="text-danger">No shipping address available.</p>
+                    {% endif %}
+                </div>    
+            </div>
+
+        </form>
+
+        <!-- Ordered Products Table -->
+        <h3 class="text-primary mb-3">Ordered Products</h3>
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered text-center">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>Return</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order_items %}
+                    <tr class="align-middle">
+                        <td>
+                            {% if item.variant and item.variant.main_image %}
+                                <img src="{{ item.variant.main_image.url }}" alt="{{ item.variant.color_name }}">
+                            {% else %}
+                                <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
+                            {% endif %}
+                            <br> {{ item.product.name }}
+                            {% if item.variant %}
+                                <br><small>Variant: {{ item.variant.color_name }}</small>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold">{{ item.quantity }}</td>
+                        <td class="text-success fw-bold fs-5">Rs. {{ item.price }}</td>
+                        <td>
+                            {% if item.return_obj %}
+                                <span class="badge bg-warning text-dark">{{ item.return_obj.status }}</span>
+                                <br>
+                                <small>{{ item.return_obj.reason }}</small>
+                                <form method="post" action="{% url 'process_return' item.return_obj.id %}">
+                                    {% csrf_token %}
+                                    <select name="new_status" class="form-select form-select-sm mt-2">
+                                        <option value="Approved">Approve</option>
+                                        <option value="Rejected">Reject</option>
+                                        <option value="Refunded">Refund</option>
+
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-primary mt-1">Update</button>
+                                </form>
+                            {% else %}
+                                <span class="text-muted">No return</span>
+                            {% endif %}
+                        
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap Styles -->
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends 'admin_home.html' %}
+
+{% block content %}
+
+<title>Sales Report</title>
+<style>
+    table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 20px;
+    }
+    table, th, td {
+        border: 1px solid #ddd;
+    }
+    th, td {
+        padding: 8px;
+    }
+    th {
+        background-color: #f2f2f2;
+    }
+    .summary {
+        margin-top: 20px;
+        font-weight: bold;
+    }
+    .filters input {
+        padding: 5px;
+        margin-right: 10px;
+    }
+    .buttons {
+        margin-top: 20px;
+        margin-bottom: 20px;  /* add some spacing below buttons */
+    }
+    button {
+        padding: 10px 20px;
+        margin-right: 10px;
+        cursor: pointer;
+    }
+</style>
+</head>
+<body>
+    <h1>Sales Report</h1>
+
+    <form method="get" class="filters">
+        <label>Filter by Date: <input type="date" name="date" value="{{ date_filter }}"></label>
+        <label>Filter by Month: <input type="month" name="month" value="{{ month_filter }}"></label>
+        <label>Filter by Year: <input type="number" name="year" min="2000" max="2100" value="{{ year_filter }}" placeholder="Year"></label>
+        <button type="submit">Filter</button>
+        <a href="{% url 'sales_report' %}">Clear Filters</a>
+    </form>
+
+    <!-- Buttons moved here, before summary and table -->
+    <div class="buttons">
+        <form action="{% url 'download_sales_pdf' %}" method="get" style="display:inline;">
+            <input type="hidden" name="date" value="{{ date_filter }}">
+            <input type="hidden" name="month" value="{{ month_filter }}">
+            <input type="hidden" name="year" value="{{ year_filter }}">
+            <button type="submit">Download PDF</button>
+        </form>
+
+        <form action="{% url 'download_sales_excel' %}" method="get" style="display:inline;">
+            <input type="hidden" name="date" value="{{ date_filter }}">
+            <input type="hidden" name="month" value="{{ month_filter }}">
+            <input type="hidden" name="year" value="{{ year_filter }}">
+            <button type="submit">Download Excel</button>
+        </form>
+    </div>
+
+    <div class="summary">
+        <p>Total Sales: ₹{{ total_sales }}</p>
+        <p>Total Orders: {{ total_orders }}</p>
+        <p>Total Items Sold: {{ total_items_sold }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>User</th>
+                <th>Date</th>
+                <th>Total Amount (Rs)</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td>{{ order.order_id }}</td>
+                <td>{{ order.user__username }}</td>
+                <td>{{ order.date|date:"Y-m-d H:i" }}</td>
+                <td>{{ order.total }}</td>
+                <td>{{ order.status }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align:center;">No orders found</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}

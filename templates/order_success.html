@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .order-success-container {
+        max-width: 480px;
+        margin: 60px auto 0 auto;
+        background: rgba(255,255,255,0.22);
+        border-radius: 24px;
+        border: 1.7px solid rgba(255,255,255,0.28);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
+        padding: 44px 34px 38px 34px;
+    }
+    .order-success-header {
+        color: #22b573;
+        font-weight: 700;
+        font-size: 2rem;
+        letter-spacing: 1px;
+        margin-bottom: 10px;
+    }
+    .order-success-icon {
+        font-size: 2.8rem;
+        margin-bottom: 7px;
+    }
+    .order-details-label {
+        color: #134170;
+        font-weight: 500;
+        font-size: 1.08rem;
+    }
+    .order-details-value {
+        color: #626262;
+        font-size: 1.09rem;
+        font-weight: 400;
+    }
+    .order-amount {
+        color: #184d28;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+    .btn-success {
+        background: linear-gradient(90deg, #56c1b6, #48aab1);
+        border: none;
+        font-size: 1.1rem;
+        font-weight: 600;
+        padding: 11px 0;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 80%;
+        transition: background 0.22s;
+        box-shadow: 0 2px 12px rgba(0, 128, 0, 0.08);
+    }
+    .btn-success:hover {
+        background: linear-gradient(90deg, #38b6c2, #8dd0ed);
+    }
+    @media (max-width: 600px) {
+        .order-success-container {
+            padding: 20px 7vw 22px 7vw;
+        }
+        .btn-success { width: 100%; }
+    }
+
+  .footer-section {
+    background: linear-gradient(130deg,#aadeee, #4eadb4 );
+    margin-top: 20px;
+    }   
+</style>
+
+<div class="container mt-5">
+    <div class="order-success-container shadow-lg text-center">
+        <div class="order-success-icon">🎉</div>
+        <h2 class="order-success-header">Order Placed Successfully!</h2>
+        <hr>
+        <div class="mb-2">
+            <span class="order-details-label">Order ID:</span>
+            <span class="order-details-value">{{ order.order_id }}</span>
+        </div>
+
+        {% if order.discount > 0 and order.final_total %}
+            <div class="mb-2">
+                <span class="order-details-label">Total Amount:</span>
+                <span class="order-amount">₹{{ order.final_total|floatformat:2 }}</span>
+            </div>
+        {% else %}
+            <div class="mb-2">
+                <span class="order-details-label">Total Amount:</span>
+                <span class="order-amount">₹{{ order.total|floatformat:2 }}</span>
+            </div>
+        {% endif %}
+
+        <div class="mb-2">
+            <span class="order-details-label">Payment Method:</span>
+            <span class="order-details-value">{{ order.payment_method }}</span>
+        </div>
+
+        {% if order.payment_method == "Razorpay" and order.razorpay_payment_id %}
+        <div class="mb-2">
+            <span class="order-details-label">Razorpay Payment ID:</span>
+            <span class="order-details-value">{{ order.razorpay_payment_id }}</span>
+        </div>
+        {% endif %}
+
+        <div style="display: flex; justify-content: center; align-items: center;">
+            <a href="{% url 'user_orders' %}" class="btn btn-success">
+                📦 View Your Orders
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

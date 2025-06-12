@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<style>
+    
+    .breadcrumbs {
+        background: #d5f1f5;
+        padding: 15px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+    }
+    .breadcrumbs a {
+        color: #084f9b;
+        text-decoration: none;
+        font-size: 0.9rem;
+        padding: 15px 20px;
+    }
+    .breadcrumbs a:hover {
+        text-decoration: underline;
+    }
+
+    
+        .custom-link {
+    background-color: #e0f7fa; 
+    color: #00796b; 
+    border-radius: 5px; 
+    padding: 12px 20px; 
+    font-size: 1rem; 
+    transition: background-color 0.3s, color 0.3s; 
+    margin-bottom: 10px; 
+    display: flex;
+    justify-content: center; 
+    align-items: center; 
+    text-align: center; 
+}
+
+   .custom-link:hover {
+        background-color: #b2ebf2; 
+        color: #11a1ac; 
+    }
+
+    .custom-link.active {
+        background-color: #11a1ac;  
+        color: white; 
+    }
+
+
+
+    .footer-section {
+            background: linear-gradient(130deg, #aadeee, #4eadb4);
+            margin-top: 200px;
+        }
+   
+    .card {
+        border: none;
+        box-shadow: 0 4px 10px rgb(0 0 0 / 0.1);
+        border-radius: 12px;
+        transition: transform 0.2s ease-in-out;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgb(0 0 0 / 0.15);
+    }
+    .card-body {
+        padding: 1.5rem 2rem;
+    }
+    .card-title {
+        font-weight: 700;
+        color: #00796b;
+        font-size: 1.3rem;
+    }
+    .card-text {
+        color: #444;
+        font-size: 1rem;
+        line-height: 1.4;
+        margin-bottom: 1rem;
+    }
+    .btn-warning {
+        background-color: #ff9800;
+        border-color: #ff9800;
+    }
+    .btn-warning:hover {
+        background-color: #e68a00;
+        border-color: #e68a00;
+    }
+    .btn-danger {
+        background-color: #f44336;
+        border-color: #f44336;
+    }
+    .btn-danger:hover {
+        background-color: #d32f2f;
+        border-color: #d32f2f;
+    }
+
+    /* Form styles */
+    form {
+        background: #f9f9f9;
+        padding: 25px 30px;
+        border-radius: 12px;
+        box-shadow: 0 6px 15px rgb(0 0 0 / 0.07);
+        margin-top: 30px;
+    }
+    form h4 {
+        color: #00796b;
+        font-weight: 700;
+        margin-bottom: 20px;
+    }
+    .form-group label {
+        font-weight: 600;
+        color: #555;
+    }
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        padding: 10px 15px;
+        font-size: 1rem;
+        transition: border-color 0.3s ease;
+    }
+    .form-control:focus {
+        border-color: #11a1ac;
+        box-shadow: 0 0 6px #11a1acaa;
+    }
+    button.btn-primary {
+        background-color: #11a1ac;
+        border: none;
+        padding: 12px 25px;
+        font-size: 1.1rem;
+        border-radius: 8px;
+        transition: background-color 0.3s ease;
+    }
+    button.btn-primary:hover {
+        background-color: #0d7c81;
+    }
+</style>
+
+<!-- Breadcrumbs for easy navigation -->
+<div class="breadcrumbs mb-4">
+    <a href="{% url 'my_account' %}">My Account</a> &gt; <span> Address</span>
+</div>
+
+<div class="container mt-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3">
+            <div class="list-group">
+                <a href="{% url 'profile_update' %}" class="list-group-item list-group-item-action py-3 custom-link">My Profile</a>
+                <a href="{% url 'address_selection' %}" class="list-group-item list-group-item-action py-3 custom-link active">Address</a>
+                <a href="{% url 'user_orders' %}" class="list-group-item list-group-item-action py-3 custom-link">Orders</a>
+                <a href="{% url 'checkout' %}" class="list-group-item list-group-item-action py-3 custom-link">Payments</a>
+                <a href="{% url 'wallet' %}" class="list-group-item list-group-item-action py-3 custom-link">Wallet</a>
+            </div>
+        </div>
+
+        <!-- Main Content: Manage Addresses -->
+        <div class="col-md-9">
+            <h2 class="mb-4" style="color:#004d40; font-weight: 700;">Manage Address</h2>
+
+            <!-- List of Saved Addresses -->
+            {% if addresses %}
+                {% for address in addresses %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ address.full_name }}</h5>
+                        <p class="card-text">
+                            <strong>Phone:</strong> {{ address.phone }}<br>
+                            <strong>Address:</strong> {{ address.address }}, {{ address.district }}, {{ address.state }}<br>
+                            <strong>Country & Zipcode:</strong> {{ address.country }} - {{ address.zipcode }}
+                        </p>
+                        <a href="{% url 'edit_address' address.id %}" class="btn btn-warning btn-sm me-2">Edit</a>
+                        <a href="{% url 'delete_address' address.id %}" class="btn btn-danger btn-sm">Delete</a>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted fst-italic">No saved addresses found.</p>
+            {% endif %}
+
+            <hr>
+
+            <!-- Address Form -->
+            <form method="POST" action="{% url 'address_manage' %}">
+                {% csrf_token %}
+                <h4>Add New Address</h4>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="full_name" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="full_name" name="full_name" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="phone" class="form-label">Phone Number</label>
+                        <input type="text" class="form-control" id="phone" name="phone" required>
+                    </div>
+                    <div class="col-12">
+                        <label for="address" class="form-label">Address</label>
+                        <textarea class="form-control" id="address" name="address" rows="3" required></textarea>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="district" class="form-label">District</label>
+                        <input type="text" class="form-control" id="district" name="district" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="state" class="form-label">State</label>
+                        <input type="text" class="form-control" id="state" name="state" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="zipcode" class="form-label">Zip Code</label>
+                        <input type="text" class="form-control" id="zipcode" name="zipcode" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="country" class="form-label">Country</label>
+                        <select class="form-select" id="country" name="country" required>
+                            <option value="">Select Country</option>
+                            <option value="United States">United States</option>
+                            <option value="Canada">Canada</option>
+                            <option value="India">India</option>
+                            <option value="Australia">Australia</option>
+                            <option value="United Kingdom">United Kingdom</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Save Address</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

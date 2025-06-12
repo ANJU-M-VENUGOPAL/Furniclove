@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+
+<style>
+     .breadcrumbs {
+        background: #d5f1f5;
+        padding: 15px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 1rem;
+    }
+
+    .breadcrumbs a {
+        color: #084f9b;
+        text-decoration: none;
+        font-size: 1rem;
+        padding: 15px 20px;
+    }
+
+    .breadcrumbs a:hover {
+        text-decoration: underline;
+    }
+
+    .footer-section {
+        background: linear-gradient(130deg, #aadeee, #4eadb4);
+        margin-top: 20px;
+    }
+    .wishlist-container {
+        max-width: 1100px;
+        margin: 30px auto;
+        padding: 20px;
+        background: #f9f9f9;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .wishlist-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    .wishlist-table th, .wishlist-table td {
+        padding: 12px;
+        border: 1px solid #ddd;
+        text-align: center;
+    }
+
+    .wishlist-table th {
+        background-color: #007bff;
+        color: #fff;
+    }
+
+    .wishlist-table img {
+        max-width: 70px;
+        height: auto;
+        border-radius: 5px;
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 6px 12px;
+        font-size: 14px;
+        text-align: center;
+        text-decoration: none;
+        border-radius: 4px;
+        transition: 0.3s;
+    }
+
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+    }
+
+    .btn-primary {
+        background: #28a745;
+        color: white;
+    }
+
+    .btn:hover {
+        opacity: 0.8;
+    }
+
+    .text-center {
+        text-align: center;
+        color: #555;
+    }
+</style>
+
+
+<div class="breadcrumbs">
+    <a href="/">Home</a> > <a href="/wishlist">Wishlist</a>
+</div>
+
+{% if wishlist_items %}
+        <div class="table-responsive">
+            <table class="wishlist-table table table-striped table-bordered">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Product</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for item in wishlist_items %}
+                    <tr>
+                        <td>
+                            {% if item.variant and item.variant.image %}
+                                <img src="{{ item.variant.image.url }}" alt="{{ item.product.name }} - {{ item.variant.color_name }}" width="80" class="img-thumbnail">
+                            {% else %}
+                                <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" width="80" class="img-thumbnail">
+                            {% endif %}
+                            <br> {{ item.product.name }}
+                            {% if item.variant %}
+                                <br> <small>Color: {{ item.variant.color_name }}</small>
+                            {% endif %}
+                        </td>
+
+                        <td>Rs. {{ item.product.original_price|floatformat:2 }}</td>
+
+                        <td>
+                            {% if item.product.stock > 0 %}
+                                <span class="text-success">In Stock ({{ item.product.stock }})</span>
+                            {% else %}
+                                <span class="text-danger">Out of Stock</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <div class="d-flex flex-column gap-2">
+                                <a href="{% url 'remove_from_wishlist' item.id %}" class="btn btn-sm btn-danger">Remove</a>
+
+                                {% if item.variant %}
+                                    <form action="{% url 'add_to_cart' item.product.id item.variant.id %}" method="POST" style="display:inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="from_wishlist" value="1">
+                                        <button type="submit" class="btn btn-sm btn-primary">Add to Cart</button>
+                                    </form>
+                                {% else %}
+                                    <form action="{% url 'add_to_cart' item.product.id %}" method="POST" style="display:inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="from_wishlist" value="1">
+                                        <button type="submit" class="btn btn-sm btn-primary">Add to Cart</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="text-center my-5">
+            <h4>Your wishlist is empty!</h4>
+            <p>Start adding items to your wishlist now!</p>
+            <a href="/" class="btn btn-success mt-3">Continue Shopping</a>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}

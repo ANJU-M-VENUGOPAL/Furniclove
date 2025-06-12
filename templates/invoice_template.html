@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice</title>
+    <style>
+        body { font-family: sans-serif; }
+        .header, .footer { text-align: center; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        table, th, td { border: 1px solid #000; }
+        th, td { padding: 8px; text-align: left; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Furniclove Invoice</h2>
+    </div>
+    <p><strong>Order ID:</strong> {{ order.order_id }}</p>
+    <p><strong>Order Date:</strong> {{ order.date|date:"F j, Y, g:i a" }}</p>
+    <p><strong>Customer:</strong> {{ order.order_address.full_name }}</p>
+    <p><strong>Address:</strong> {{ order.order_address.address }}, {{ order.order_address.district }}, {{ order.order_address.state }}, {{ order.order_address.country }}, {{ order.order_address.zipcode }}</p>
+    <p><strong>Total Amount:</strong> ₹{{ order.total }}</p>
+
+    <h4>Order Items</h4>
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Unit Price</th>
+                <th>Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order_items %}
+            <tr>
+                <td>{{ item.product.name }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>₹{{ item.price }}</td>
+                <td>₹{{ item.subtotal }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>Thank you for your purchase!</p>
+    </div>
+</body>
+</html>

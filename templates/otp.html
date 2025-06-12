@@ -1,0 +1,194 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTP Verification</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body {
+            background-image: 
+            linear-gradient(rgba(255,255,255,0.18), rgba(255,255,255,0.18)),
+            url("{% static 'images/common.jpg' %}");
+            background-size: cover;
+            background-position: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .glass-container {
+            background: rgba(255,255,255,0.18);
+            border-radius: 22px;
+            padding: 38px 30px 30px 30px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
+            backdrop-filter: blur(13px);
+            -webkit-backdrop-filter: blur(13px);
+            border: 1px solid rgba(255,255,255,0.18);
+            max-width: 400px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        h2 {
+            font-size: 2rem;
+            color: #134170;
+            text-align: center;
+            font-weight: 700;
+            margin-bottom: 22px;
+            letter-spacing: 1px;
+        }
+        label {
+            color: #0a2846;
+            font-weight: 500;
+        }
+        .form-control {
+            border-radius: 10px;
+            margin-bottom: 14px;
+            padding: 13px;
+            font-size: 15.5px;
+            background: rgba(255,255,255,0.75);
+            border: 1.4px solid #dde6f9;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+        .form-control:focus {
+            border-color: #2979ff;
+            box-shadow: 0 0 5px rgba(41, 121, 255, 0.15);
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 13px;
+            border-radius: 10px;
+            font-size: 1.08rem;
+            font-weight: 600;
+            background: linear-gradient(90deg, #2979ff, #00c6ff);
+            border: none;
+            margin-top: 6px;
+            transition: background 0.22s;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(90deg, #13547a, #80d0c7);
+        }
+        .btn-outline-danger {
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .btn-outline-danger:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .alert {
+            border-radius: 11px;
+            border: none;
+            margin-top: 0.4rem;
+            margin-bottom: 0.7rem;
+            display: flex;
+            align-items: center;
+            font-size: 1.03rem;
+            padding: 9px 13px;
+        }
+        .alert i {
+            font-size: 1.22rem;
+            margin-right: 7px;
+        }
+        .alert-success { background: #e0ffe2; color: #187013;}
+        .alert-danger, .alert-error { background: #ffe0e0; color: #c41e1e;}
+        .alert-info { background: #eaf4ff; color: #134170;}
+        .alert-warning { background: #fff8e1; color: #906600;}
+        #timer {
+            color: #134170;
+            font-size: 1.08rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="glass-container">
+    <h2>OTP Verification</h2>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {% if message.tags == "success" %}
+                    <i class="fa fa-check-circle"></i>
+                {% elif message.tags == "error" or message.tags == "danger" %}
+                    <i class="fa fa-times-circle"></i>
+                {% elif message.tags == "warning" %}
+                    <i class="fa fa-exclamation-triangle"></i>
+                {% else %}
+                    <i class="fa fa-info-circle"></i>
+                {% endif %}
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="POST" autocomplete="off">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="otp"><b>Enter OTP</b></label>
+            <input type="text" name="otp" id="otp" class="form-control" required maxlength="6" autocomplete="one-time-code" autofocus>
+        </div>
+        <button type="submit" class="btn btn-primary">Verify OTP</button>
+    </form>
+
+    <div class="text-center mt-3">
+        <p id="timer"></p>
+    </div>
+
+    <div class="text-center mt-3">
+        <button id="resendBtn" class="btn btn-outline-danger w-100" onclick="resendOtp()" disabled>
+            Resend OTP
+        </button>
+    </div>
+</div>
+
+<script>
+    let timerElement = document.getElementById("timer");
+    let resendBtn = document.getElementById("resendBtn");
+    let countdown = 120;  // 2 minutes in seconds
+    let timer;
+
+    function startTimer() {
+        resendBtn.disabled = true;
+        timer = setInterval(function() {
+            let minutes = Math.floor(countdown / 60);
+            let seconds = countdown % 60;
+            timerElement.textContent = `Time remaining: ${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
+            countdown--;
+
+            if (countdown < 0) {
+                clearInterval(timer);
+                timerElement.textContent = "Didn't get the OTP?";
+                resendBtn.disabled = false;
+            }
+        }, 1000);
+    }
+
+    function resendOtp() {
+        // You will need to implement the backend view for actual resend logic.
+        resendBtn.disabled = true;
+        countdown = 120;
+        timerElement.textContent = "Sending OTP...";
+        // Optionally, make an AJAX call here to trigger resend on server.
+        // After successful resend, restart timer:
+        setTimeout(function() {
+            timerElement.textContent = '';
+            startTimer();
+        }, 1200);
+    }
+
+    // Initial timer start
+    startTimer();
+</script>
+
+</body>
+</html>

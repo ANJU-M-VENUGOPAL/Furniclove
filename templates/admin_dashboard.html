@@ -1,0 +1,131 @@
+{% extends 'admin_home.html' %}
+{% load static %}
+
+{% block title %}Product Management{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="container mt-5">
+    <div class="card shadow-lg p-4">
+        <h2 class="text-center text-primary mb-4">📊 Admin Dashboard</h2>
+
+        <!-- Filters -->
+        <form method="get" class="row g-3 justify-content-center mb-4">
+            <div class="col-md-3">
+                <label class="form-label">Year</label>
+                <input type="number" name="year" value="{{ year|default:'' }}" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Month</label>
+                <input type="number" name="month" value="{{ month|default:'' }}" class="form-control">
+            </div>
+            <div class="col-md-2 align-self-end">
+                <button type="submit" class="btn btn-primary w-100">Filter</button>
+            </div>
+        </form>
+
+        <!-- Charts -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card p-3 mb-4">
+                    <h5 class="text-center mb-3">Top 10 Products</h5>
+                    <canvas id="productChart"></canvas>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card p-3 mb-4">
+                    <h5 class="text-center mb-3">Top 10 Categories</h5>
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tables -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <h5 class="text-primary">📦 Top Products</h5>
+                <table class="table table-bordered table-hover mt-2">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Product</th>
+                            <th>Quantity Sold</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in top_products %}
+                            <tr>
+                                <td>{{ item.product__name }}</td>
+                                <td>{{ item.total_quantity }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="col-md-6">
+                <h5 class="text-primary">🗂️ Top Categories</h5>
+                <table class="table table-bordered table-hover mt-2">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Category</th>
+                            <th>Quantity Sold</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in top_categories %}
+                            <tr>
+                                <td>{{ item.product__category__name }}</td>
+                                <td>{{ item.total_quantity }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart Scripts -->
+<script>
+    const productLabels = JSON.parse('{{ product_labels|escapejs }}');
+    const productData = JSON.parse('{{ product_data|escapejs }}');
+    const categoryLabels = JSON.parse('{{ category_labels|escapejs }}');
+    const categoryData = JSON.parse('{{ category_data|escapejs }}');
+
+    new Chart(document.getElementById('productChart'), {
+        type: 'bar',
+        data: {
+            labels: productLabels,
+            datasets: [{
+                label: 'Top Products',
+                data: productData,
+                backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'bar',
+        data: {
+            labels: categoryLabels,
+            datasets: [{
+                label: 'Top Categories',
+                data: categoryData,
+                backgroundColor: 'rgba(255, 159, 64, 0.7)',
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } }
+        }
+    });
+</script>
+{% endblock %}

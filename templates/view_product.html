@@ -1,0 +1,82 @@
+{% extends 'admin_home.html' %}
+{% load static %}
+
+{% block title %}View Product{% endblock %}
+
+{% block content %}
+    <div class="card p-4 shadow-sm">
+        <h2 class="mb-4 text-primary">View Product</h2>
+
+        <table class="table table-bordered">
+            <tr>
+                <th>Name:</th>
+                <td>{{ product.name }}</td>
+            </tr>
+            <tr>
+                <th>Description:</th>
+                <td>{{ product.description }}</td>
+            </tr>
+            <tr>
+                <th>Original Price:</th>
+                <td>{{ product.original_price }}</td>
+            </tr>
+            <tr>
+                <th>Discount Price:</th>
+                <td>{{ product.discount_price }}</td>
+            </tr>
+            <tr>
+                <th>Discount Percent:</th>
+                <td>{{ product.discount_percent }}%</td>
+            </tr>
+            <tr>
+                <th>Main Image:</th>
+                <td><img src="{{ product.image.url }}" alt="{{ product.name }}" width="150"></td>
+            </tr>
+            <tr>
+                <th>Thumbnails:</th>
+                <td>
+                    {% for thumbnail in thumbnails %}
+                        <img src="{{ thumbnail }}" alt="Thumbnail" width="50" height="50">
+                    {% endfor %}
+                </td>
+            </tr>
+            <tr>
+                <th>Category:</th>
+                <td>{{ product.category }}</td>
+            </tr>
+            <tr>
+                <th>Stock:</th>
+                <td>{{ product.stock }}</td>
+            </tr>
+        </table>
+
+        
+
+<h4>Related Products</h4>
+
+{% if related_products %}
+    <div class="row">
+        {% for related in related_products %}
+            <div class="col-md-3">
+                <div class="card">
+                    <img src="{{ related.image.url }}" class="card-img-top" alt="{{ related.name }}">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ related.name }}</h5>
+                        <p class="card-text">₹{{ related.original_price }}</p>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <p>No related products found.</p>
+{% endif %}
+
+
+        <div class="text-right">
+            <a href="{% url 'product_management' %}" class="btn btn-primary">Back to Product Management</a>
+        </div>
+    </div>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}
+

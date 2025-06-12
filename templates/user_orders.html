@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+
+<style>
+     .breadcrumbs {
+        background: #d5f1f5;
+        padding: 15px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+    }
+
+    .breadcrumbs a {
+        color: #084f9b;
+        text-decoration: none;
+        font-size: 0.9rem;
+        padding: 15px 20px;
+    }
+
+    .breadcrumbs a:hover {
+        text-decoration: underline;
+    }
+
+    .footer-section {
+        background: linear-gradient(130deg, #aadeee, #4eadb4);
+        margin-top: 200px;
+    }
+    
+    .custom-link {
+        background-color: #e0f7fa; 
+        color: #00796b; 
+        border-radius: 5px; 
+        padding: 12px 20px; 
+        font-size: 1rem; 
+        transition: background-color 0.3s, color 0.3s; 
+        margin-bottom: 10px; 
+        display: flex;
+        justify-content: center; 
+        align-items: center; 
+        text-align: center; 
+    }
+
+    .custom-link:hover {
+        background-color: #b2ebf2; 
+        color: #11a1ac; 
+    }
+
+    .custom-link.active {
+        background-color: #11a1ac;  
+        color: white; 
+    }
+
+    /* Orders Table */
+    .table-container {
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .table {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .table th {
+        background: #0277bd;
+        color: white;
+        text-align: center;
+    }
+    .table td, .table th {
+        text-align: center;
+        vertical-align: middle;
+        padding: 12px;
+    }
+
+    /* Status Badges */
+    .badge-status {
+        padding: 8px 12px;
+        border-radius: 5px;
+        font-weight: 500;
+    }
+    .badge-delivered {
+        background: #21a740;
+        color: #080808;
+    }
+    .badge-pending {
+        background: #868683;
+        color: #080808;
+    }
+    .badge-cancelled {
+        background: #f72537;
+        color: #080808;
+    }
+
+    .badge-shipped {
+        background: #dfe231;
+        color: #080808;
+    }
+
+
+    /* View Details Button */
+    .btn-view {
+        background: #17a2b8;
+        color: white;
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 0.9rem;
+        transition: 0.3s;
+    }
+    .btn-view:hover {
+        background: #138496;
+        color: white;
+    }
+
+    
+</style>
+
+<!-- Breadcrumbs -->
+<div class="breadcrumbs">
+    <a href="{% url 'my_account' %}">My Account</a> > <span>Orders</span>
+</div>
+
+<div class="container mt-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3">
+            <div class="list-group">
+                <a href="{% url 'profile_update' %}" class="list-group-item list-group-item-action py-3 custom-link">My Profile</a>
+                <a href="{% url 'address_manage' %}" class="list-group-item list-group-item-action py-3 custom-link">Address</a>
+                <a href="{% url 'user_orders' %}" class="list-group-item list-group-item-action py-3 custom-link active">Orders</a>
+                <a href="{% url 'checkout' %}" class="list-group-item list-group-item-action py-3 custom-link">Payments</a>
+                <a href="{% url 'wallet' %}" class="list-group-item list-group-item-action py-3 custom-link">Wallet</a>
+
+            </div>
+        </div>
+
+        <!-- Orders Table -->
+        <div class="col-md-9">
+            <div class="table-container">
+                <h3 class="mb-4 text-center">My Orders</h3>
+
+                {% if orders %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Total</th>
+                                    <th>Payment</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in orders %}
+                                    <tr>
+                                        <td>{{ order.order_id }}</td>
+                                        <td>{{ order.date|date:"d M, Y" }}</td>
+                                        <td>
+                                            {% if order.status == "Delivered" %}
+                                                <span class="badge badge-status badge-delivered">Delivered</span>
+                                            {% elif order.status == "Pending" %}
+                                                <span class="badge badge-status badge-pending">Pending</span>
+                                            {% elif order.status == "Shipped" %}
+                                                <span class="badge badge-status badge-shipped">Shipped</span>
+                                            {% elif order.status == "Cancelled" %}
+                                                <span class="badge badge-status badge-cancelled">Cancelled</span>
+                                            {% else %}
+                                                <span class="badge badge-status badge-pending">{{ order.status }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>₹{{ order.total }}</td>
+                                        <td>{{ order.payment_method }}</td>
+                                        <td>
+                                            <a href="{% url 'order_details' order.id %}" class="btn btn-view">View</a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">You have no orders yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

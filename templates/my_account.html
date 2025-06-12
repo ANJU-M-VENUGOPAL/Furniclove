@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FurniClove</title>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+
+    <style>
+        .breadcrumbs {
+            background: #d5f1f5;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .breadcrumbs a {
+            color: #084f9b;
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 15px 20px;
+        }
+
+        .breadcrumbs a:hover {
+            text-decoration: underline;
+        }
+
+        .footer-section {
+            background: linear-gradient(130deg, #aadeee, #4eadb4);
+            margin-top: 200px;
+        }
+
+        .custom-link {
+    background-color: #e0f7fa; 
+    color: #00796b; 
+    border-radius: 5px; 
+    padding: 12px 20px; 
+    font-size: 1rem; 
+    transition: background-color 0.3s, color 0.3s; 
+    margin-bottom: 10px; 
+    display: flex;
+    justify-content: center; 
+    align-items: center; 
+    text-align: center; 
+}
+
+.custom-link:hover {
+    background-color: #b2ebf2; 
+    color: #004d40; 
+}
+
+.custom-link.active {
+    background-color: #00796b; 
+    color: white; 
+}
+</style>
+
+</head>
+<body>
+    <!-- Navbar and other parts of the layout -->
+    
+    
+        <!-- Breadcrumbs for easy navigation -->
+        <div class="breadcrumbs mb-4">
+            <a href="{% url 'my_account' %}">My Account</a>
+        </div>
+    <div class="container mt-4">    
+        
+        <div class="row">
+            <!-- Sidebar on the left -->
+            <div class="col-md-3">
+                <div class="list-group">
+                    <a href="{% url 'profile_update' %}" class="list-group-item list-group-item-action py-3 custom-link">My Profile</a>
+                    <a href="{% url 'address_manage' %}" class="list-group-item list-group-item-action py-3 custom-link">Address</a>
+                    <a href="{% url 'user_orders' %}" class="list-group-item list-group-item-action py-3 custom-link">Orders</a>
+                    <a href="{% url 'checkout' %}" class="list-group-item list-group-item-action py-3 custom-link">Payments</a>
+                    <a href="{% url 'wallet' %}" class="list-group-item list-group-item-action py-3 custom-link">Wallet</a>
+
+
+                </div>
+            </div>
+            
+            <!-- Main content on the right -->
+            <div class="col-md-9">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h3 class="card-title">Welcome,  {{ request.user.username }}!!!</h3>
+                        <p class="card-text">Manage your orders, profile, and more.</p>
+                    </div>
+                </div>
+
+                
+            </div>
+        </div>
+    </div>
+
+   
+</body>
+</html>
+
+{% endblock %}

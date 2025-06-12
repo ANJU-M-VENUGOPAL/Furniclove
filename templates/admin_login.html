@@ -1,0 +1,135 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body {
+            background-image: 
+            linear-gradient(rgba(255,255,255,0.18), rgba(255,255,255,0.18)),
+            url("{% static 'images/common.jpg' %}");
+            background-size: cover;
+            background-position: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .glass-container {
+            background: rgba(255,255,255,0.18);
+            border-radius: 22px;
+            padding: 42px 32px 32px 32px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.22);
+            backdrop-filter: blur(13px);
+            -webkit-backdrop-filter: blur(13px);
+            border: 1px solid rgba(255,255,255,0.18);
+            max-width: 410px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        .glass-container h2 {
+            font-size: 2rem;
+            color: #134170;
+            text-align: center;
+            font-weight: 700;
+            margin-bottom: 27px;
+            letter-spacing: 1px;
+        }
+        .form-control {
+            border-radius: 10px;
+            margin-bottom: 18px;
+            padding: 13px;
+            font-size: 15.5px;
+            background: rgba(255,255,255,0.75);
+            border: 1.4px solid #dde6f9;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+        .form-control:focus {
+            border-color: #2979ff;
+            box-shadow: 0 0 5px rgba(41, 121, 255, 0.15);
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 13px;
+            border-radius: 10px;
+            font-size: 1.08rem;
+            font-weight: 600;
+            background: linear-gradient(90deg, #2979ff, #00c6ff);
+            border: none;
+            margin-top: 6px;
+            transition: background 0.22s;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(90deg, #13547a, #80d0c7);
+        }
+        .alert {
+            border-radius: 11px;
+            border: none;
+            margin-top: 0.4rem;
+            margin-bottom: 0.7rem;
+            display: flex;
+            align-items: center;
+            font-size: 1.04rem;
+            padding: 9px 13px;
+        }
+        .alert i {
+            font-size: 1.28rem;
+            margin-right: 7px;
+        }
+        .alert-success { background: #e0ffe2; color: #187013;}
+        .alert-danger, .alert-error { background: #ffe0e0; color: #c41e1e;}
+        .alert-info { background: #eaf4ff; color: #134170;}
+        .alert-warning { background: #fff8e1; color: #906600;}
+        @media (max-width: 600px) {
+            .glass-container { padding: 20px 7vw 18px 7vw; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="glass-container">
+    <h2>Admin Login</h2>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {% if message.tags == "success" %}
+                    <i class="fa fa-check-circle"></i>
+                {% elif message.tags == "error" or message.tags == "danger" %}
+                    <i class="fa fa-times-circle"></i>
+                {% elif message.tags == "warning" %}
+                    <i class="fa fa-exclamation-triangle"></i>
+                {% else %}
+                    <i class="fa fa-info-circle"></i>
+                {% endif %}
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="POST" action="{% url 'admin_login' %}">
+        {% csrf_token %}
+        <input type="text" name="username" class="form-control" placeholder="Enter your username" required autofocus>
+        <input type="password" name="password" class="form-control" placeholder="Enter your password" required>
+        <button type="submit" class="btn btn-primary">Login</button>
+    </form>
+</div>
+
+<script>
+    setTimeout(function() {
+        let alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            alert.style.display = 'none';
+        });
+    }, 5000);  // Hide error messages after 5 seconds
+</script>
+</body>
+</html>

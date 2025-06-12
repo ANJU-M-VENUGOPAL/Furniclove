@@ -1,0 +1,85 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="author" content="Untree.co">
+  <link rel="shortcut icon" href="{% static 'favicon.png' %}">
+
+  <meta name="description" content="High-quality furniture at affordable prices.">
+  <meta name="keywords" content="furniture, shop, home decor, FurniClove">
+
+  <!-- Bootstrap CSS -->
+  <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <link href="{% static 'css/tiny-slider.css' %}" rel="stylesheet">
+  <link href="{% static 'css/style.css' %}" rel="stylesheet">
+  <title>FurniClove</title>
+</head>
+
+<body>
+  <!-- Header/Navigation -->
+  <nav class="custom-navbar navbar navbar-expand-md navbar-dark bg-dark" aria-label="Furni navigation bar">
+    <div class="container">
+      <a class="navbar-brand" href="{% url 'index' %}">FurniClove<span>.</span></a>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsFurni"
+        aria-controls="navbarsFurni" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarsFurni">
+        <ul class="custom-navbar-nav navbar-nav ms-auto mb-2 mb-md-0">
+          <li class="nav-item">
+            <a class="nav-link active" href="{% url 'index' %}">Home</a>
+          </li>
+          <li><a class="nav-link" href="{% url 'shop' %}">Shop</a></li>
+          <li><a class="nav-link" href="{% url 'about' %}">About us</a></li>
+          <li><a class="nav-link" href="{% url 'services' %}">Services</a></li>
+          <li><a class="nav-link" href="{% url 'contact' %}">Contact us</a></li>
+        </ul>
+
+        <ul class="navbar-nav ms-5">
+          <!-- User Dropdown -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
+              aria-expanded="false">
+              <img src="{% static 'images/user.svg' %}" alt="User Icon">
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+              {% if user.is_authenticated %}
+              <li><a class="dropdown-item" href="{% url 'profile' %}">My Profile</a></li>
+              <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
+              {% else %}
+              <li><a class="dropdown-item" href="{% url 'signup' %}">Signup</a></li>
+              <li><a class="dropdown-item" href="{% url 'login' %}">Login</a></li>
+              {% endif %}
+            </ul>
+          </li>
+
+          <!-- Cart and Wishlist -->
+          <li class="nav-item">
+            <a class="nav-link" href="{% if user.is_authenticated %}{% url 'cart' %}{% else %}{% url 'login' %}{% endif %}">
+              <img src="{% static 'images/cart.svg' %}" alt="Cart Icon">
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link"
+              href="{% if user.is_authenticated %}{% url 'wishlist' %}{% else %}{% url 'login' %}{% endif %}">
+              <img src="{% static 'images/wishlist.svg' %}" alt="Wishlist Icon">
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  {% block content %}	FurniClove {% endblock %}		 
+
+<script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'js/tiny-slider.js' %}"></script>
+<script src="{% static 'js/custom.js' %}"></script>
+</body>
+  
+</html>

@@ -1,0 +1,27 @@
+{% extends 'admin_home.html' %}
+{% load static %}
+
+{% block title %}Edit Category{% endblock %}
+
+{% block content %}
+<div class="card p-4 shadow-sm">
+    <h2 class="mb-4 text-primary">Edit Category</h2>
+
+    <!-- Category Form -->
+    <form method="POST" action="{% url 'edit_category' category.id %}">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="form-group text-right">
+            <button type="submit" class="btn btn-warning">Save Changes</button>
+        </div>
+    </form>
+    
+
+    <div class="text-left mt-3">
+        <a href="{% url 'category_management' %}" class="btn btn-secondary">Back to Category List</a>
+    </div>
+</div>
+
+<!-- Bootstrap CSS -->
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}

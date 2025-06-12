@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environments
+furniclove_env/
+env/
+venv/
+ENV/
+.venv/
+
+# Editor and IDE folders/files
+.vscode/
+.idea/
+*.code-workspace
+
+# Local environment variables
+*.env
+.env.*
+.env
+
+# Django specific
+db.sqlite3
+*.sqlite3
+
+# Media files (user uploads)
+media/
+
+# Static files (auto-generated, can be rebuilt)
+staticfiles/
+static/
+
+# Django migrations (ignore pycache inside migrations, keep migration files)
+**/migrations/__pycache__/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Test & coverage
+htmlcov/
+coverage.*
+*.cover
+.tox/
+nosetests.xml
+pytest_cache/
+
+# Python environment config
+pyvenv.cfg
+
+# pip wheel/build cache
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# PDF or report outputs (optional, if generated)
+*.pdf
+
+# Log files (optional)
+*.log

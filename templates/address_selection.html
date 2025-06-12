@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<style>
+    /* General Styles */
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f4f7fb;
+        color: #333;
+    }
+
+    .breadcrumbs {
+            background: #d5f1f5;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .breadcrumbs a {
+            color: #084f9b;
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 15px 20px;
+        }
+
+        .breadcrumbs a:hover {
+            text-decoration: underline;
+        }
+
+        .footer-section {
+            background: linear-gradient(130deg, #aadeee, #4eadb4);
+            margin-top: 200px;
+        }
+     
+    .custom-link {
+        background-color: #e0f7fa; 
+        color: #00796b; 
+        border-radius: 5px; 
+        padding: 12px 20px; 
+        font-size: 1rem; 
+        transition: background-color 0.3s, color 0.3s; 
+        margin-bottom: 10px; 
+        display: flex;
+        justify-content: center; 
+        align-items: center; 
+        text-align: center; 
+    }
+
+    .custom-link:hover {
+        background-color: #b2ebf2; 
+        color: #11a1ac; 
+    }
+
+    .custom-link.active {
+        background-color: #11a1ac;  
+        color: white; 
+    }
+
+    .address-card {
+        background: #ffffff;
+        border: 1px solid #ddd;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        transition: box-shadow 0.3s ease-in-out;
+    }
+
+    .address-card:hover {
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .address-card p {
+        margin: 5px 0;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    .address-selection {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        justify-content: space-between;
+    }
+
+    .address-item {
+        flex: 1 0 48%; /* 2 per row */
+        box-sizing: border-box;
+    }
+
+    .form-check-input {
+        margin-right: 10px;
+    }
+
+    .delete-btn {
+        background-color: #f44336;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+
+    .delete-btn:hover {
+        background-color: #d32f2f;
+        transform: scale(1.05);
+    }
+
+    .delete-btn:active {
+        background-color: #b71c1c;
+    }
+
+    .delete-btn:focus {
+        outline: none;
+    }
+
+    .delete-btn i {
+        margin-right: 5px;
+    }
+
+    /* Sidebar Styles */
+    .sidebar {
+        background: #ffffff;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .sidebar a {
+        color: #00796b;
+        font-size: 1rem;
+        padding: 12px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        display: block;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .sidebar a:hover {
+        background-color: #e0f7fa;
+        color: #11a1ac;
+    }
+
+    .sidebar .active {
+        background-color: #11a1ac;
+        color: white;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .address-item {
+            flex: 1 0 100%; /* Single column on small screens */
+        }
+
+        .sidebar {
+            margin-top: 20px;
+        }
+    }
+</style>
+
+<!-- Breadcrumbs for easy navigation -->
+<div class="breadcrumbs mb-4">
+    <a href="{% url 'my_account' %}">My Account</a> > <span> Address</span>
+</div>
+
+<div class="container mt-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3">
+            <div class="list-group">
+                <a href="{% url 'profile_update' %}" class="list-group-item list-group-item-action py-3 custom-link">My Profile</a>
+                <a href="{% url 'address_manage' %}" class="list-group-item list-group-item-action py-3 custom-link">Address</a>
+                <a href="{% url 'user_orders' %}" class="list-group-item list-group-item-action py-3 custom-link">Orders</a>
+                <a href="{% url 'checkout' %}" class="list-group-item list-group-item-action py-3 custom-link">Payments</a>
+                <a href="{% url 'wallet' %}" class="list-group-item list-group-item-action py-3 custom-link">Wallet</a>
+
+
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <h2>Saved Addresses</h2>
+            <form method="POST" action="{% url 'checkout' %}">
+                {% csrf_token %}
+                <div class="address-selection">
+                    {% for address in addresses %}
+                        <div class="address-item">
+                            <div class="address-card">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="selected_address" id="address_{{ address.id }}" value="{{ address.id }}" required>
+                                    <label class="form-check-label" for="address_{{ address.id }}">
+                                        <p><strong>{{ address.full_name }}</strong></p>
+                                        <p>{{ address.address }}</p>
+                                        <p>{{ address.district }}, {{ address.state }}</p>
+                                        <p>{{ address.zipcode }}, {{ address.country }}</p>
+                                        <p>{{ address.phone }}</p>
+                                    </label>
+                                </div>
+                                <form method="POST" action="{% url 'delete_address' address.id %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="delete-btn">
+                                        <i class="fas fa-trash-alt"></i> Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <button type="submit" class="btn btn-primary mt-4">Select Address</button>
+            </form>
+            <br><br>
+            <a href="{% url 'address_manage' %}" class="btn btn-secondary">Add New Address</a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

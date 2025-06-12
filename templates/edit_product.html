@@ -1,0 +1,91 @@
+{% extends 'admin_home.html' %}
+{% load static %}
+
+{% block title %}Edit Product{% endblock %}
+
+{% block content %}
+    <div class="card p-4 shadow-sm">
+        <h2 class="mb-4 text-primary">Edit Product</h2>
+
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="name">Name:</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{ product.name }}" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <textarea class="form-control" id="description" name="description" rows="4" required>{{ product.description }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="category">Category:</label>
+                <select class="form-control" id="category" name="category" required>
+                    {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if cat.id == product.category.id %}selected{% endif %}>
+                            {{ cat.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="original_price">Original Price:</label>
+                <input type="number" class="form-control" id="original_price" name="original_price" value="{{ product.original_price }}" step="0.01" required>
+            </div>
+
+            <!-- Added offer_percent field -->
+            <div class="form-group">
+                <label for="offer_percent">Offer Percent:</label>
+                <input type="number" class="form-control" id="offer_percent" name="offer_percent" value="{{ product.offer_percent }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="stock">Stock:</label>
+                <input type="number" class="form-control" id="stock" name="stock" value="{{ product.stock }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="image">Main Image:</label>
+                <input type="file" class="form-control" id="image" name="image">
+                {% if product.image %}
+                    <p>Current Image: <img src="{{ product.image.url }}" width="100"></p>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="thumbnail_1">Thumbnail 1:</label>
+                <input type="file" class="form-control" id="thumbnail_1" name="thumbnail_1">
+                {% if product.thumbnail_1 %}
+                    <p>Current Thumbnail 1: <img src="{{ product.thumbnail_1.url }}" width="50"></p>
+                {% endif %}
+            </div>
+            <div class="form-group">
+                <label for="thumbnail_2">Thumbnail 2:</label>
+                <input type="file" class="form-control" id="thumbnail_2" name="thumbnail_2">
+                {% if product.thumbnail_2 %}
+                    <p>Current Thumbnail 2: <img src="{{ product.thumbnail_2.url }}" width="50"></p>
+                {% endif %}
+            </div>
+            <div class="form-group">
+                <label for="thumbnail_3">Thumbnail 3:</label>
+                <input type="file" class="form-control" id="thumbnail_3" name="thumbnail_3">
+                {% if product.thumbnail_3 %}
+                    <p>Current Thumbnail 3: <img src="{{ product.thumbnail_3.url }}" width="50"></p>
+                {% endif %}
+            </div>
+            <div class="form-group">
+                <label for="thumbnail_4">Thumbnail 4:</label>
+                <input type="file" class="form-control" id="thumbnail_4" name="thumbnail_4">
+                {% if product.thumbnail_4 %}
+                    <p>Current Thumbnail 4: <img src="{{ product.thumbnail_4.url }}" width="50"></p>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary">Update Product</button>
+        </form>
+
+        <div class="text-right mt-3">
+            <a href="{% url 'product_management' %}" class="btn btn-secondary">Back to Product Management</a>
+        </div>
+    </div>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}

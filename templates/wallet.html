@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block content %}
+{% load tz %}
+
+<style>
+    body {
+        background-color: #f8f9fa;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .breadcrumbs {
+        background: #d5f1f5;
+        padding: 15px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+    }
+
+    .breadcrumbs a {
+        color: #084f9b;
+        text-decoration: none;
+        font-size: 0.9rem;
+        padding: 15px 20px;
+    }
+
+    .breadcrumbs a:hover {
+        text-decoration: underline;
+    }
+
+    .custom-link {
+        background-color: #e0f7fa; 
+        color: #00796b; 
+        border-radius: 5px; 
+        padding: 12px 20px; 
+        font-size: 1rem; 
+        transition: background-color 0.3s, color 0.3s; 
+        margin-bottom: 10px; 
+        display: flex;
+        justify-content: center; 
+        align-items: center; 
+        text-align: center; 
+    }
+
+    .custom-link:hover {
+        background-color: #b2ebf2; 
+        color: #11a1ac; 
+    }
+
+    .custom-link.active {
+        background-color: #11a1ac;  
+        color: white; 
+    }
+
+
+    .wallet-box {
+        background: #97e2ec;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .wallet-balance {
+        background: #fff;
+        padding: 15px;
+        border-radius: 10px;
+        font-weight: bold;
+        color: #333;
+        min-width: 220px;
+        display: inline-block;
+        text-align: center;
+    }
+
+    .form-control {
+        max-width: 250px;
+        display: inline-block;
+        margin-right: 10px;
+    }
+
+    .pagination .page-link {
+        border-radius: 8px;
+        margin: 0 3px;
+    }
+
+    .search-section {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+    }
+    
+    .footer-section {
+        background: linear-gradient(130deg, #aadeee, #4eadb4);
+        margin-top: 200px;
+    }
+</style>
+
+<div class="breadcrumbs">
+    <a href="{% url 'my_account' %}">My Account</a> > <span>Wallet</span>
+</div>
+
+<div class="container mt-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3">
+            <div class="list-group">
+                <a href="{% url 'profile_update' %}" class="list-group-item custom-link">My Profile</a>
+                <a href="{% url 'address_manage' %}" class="list-group-item custom-link">Address</a>
+                <a href="{% url 'user_orders' %}" class="list-group-item custom-link">Orders</a>
+                <a href="{% url 'checkout' %}" class="list-group-item custom-link">Payments</a>
+                <a href="{% url 'wallet' %}" class="list-group-item custom-link active">Wallet</a>
+            </div>
+        </div>
+
+        <!-- Wallet Section -->
+        <div class="col-md-9">
+            <div class="wallet-box mb-4 text-center">
+                <h3>Wallet Balance</h3>
+                <div class="wallet-balance mt-2">
+                    ₹ {{ balance|floatformat:2 }}
+                </div>
+            </div>
+
+            <h4 class="mt-5 mb-3">Transaction History</h4>
+
+            <!-- Search section -->
+            <form method="get" class="search-section mb-4">
+                <input type="text" name="amount" class="form-control" placeholder="Search by Amount" value="{{ request.GET.amount }}">
+                <input type="date" name="date" class="form-control" value="{{ request.GET.date }}">
+                <button type="submit" class="btn btn-outline-primary">Search</button>
+                <a href="{% url 'wallet' %}" class="btn btn-outline-secondary">Reset</a>
+            </form>
+
+            <!-- Transaction table -->
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                        <tr>
+                            <td>{{ transaction.created_at|localtime|date:"Y-m-d H:i" }}</td>
+                            <td>₹ {{ transaction.amount|floatformat:2 }}</td>
+                            <td>
+                                {% if transaction.transaction_type == 'Credited' %}
+                                    <span class="text-success">{{ transaction.transaction_type }}</span>
+                                {% else %}
+                                    <span class="text-danger">{{ transaction.transaction_type }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center">No transactions found.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            {% if transactions.has_other_pages %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if transactions.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ transactions.previous_page_number }}&date={{ request.GET.date }}&amount={{ request.GET.amount }}">Previous</a>
+                            </li>
+                        {% endif %}
+
+                        {% for i in transactions.paginator.page_range %}
+                            {% if transactions.number == i %}
+                                <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ i }}&date={{ request.GET.date }}&amount={{ request.GET.amount }}">{{ i }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if transactions.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ transactions.next_page_number }}&date={{ request.GET.date }}&amount={{ request.GET.amount }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

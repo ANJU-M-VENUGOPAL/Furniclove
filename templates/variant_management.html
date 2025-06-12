@@ -1,0 +1,63 @@
+{% extends 'admin_home.html' %}
+{% load static %}
+
+{% block title %}Color Variants for {{ product.name }}{% endblock %}
+
+{% block content %}
+    <div class="card p-4 shadow-sm">
+        <h2 class="mb-4 text-primary">Color Variants for {{ product.name }}</h2>
+
+        <div class="text-right mb-3">
+            <a href="{% url 'add_variant' product.id %}" class="btn btn-success">Add New Color Variant</a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Sl.No</th>
+                        <th>Color</th>
+                        <th>Color Code</th>
+                        <th>Image</th>
+                        <th>Stock</th>
+                        <th>Price Override</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for variant in color_variants %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ variant.color_name }}</td>
+                            <td>{{ variant.color_code }}</td>
+                            <td>
+                                <img src="{{ variant.main_image.url }}" alt="{{ variant.color_name }}" width="50" height="50">
+                            </td>
+                            
+                            <td>{{ variant.stock }}</td>
+                            <td>{{ variant.price_override }}</td>
+                            <td>
+                                <a href="{% url 'edit_variant' variant.id %}" class="btn btn-warning btn-sm">Edit</a>
+                                {% if variant.is_active %}
+                                    <a href="{% url 'block_variant' variant.id %}" class="btn btn-danger btn-sm">Block</a>
+                                {% else %}
+                                    <a href="{% url 'unblock_variant' variant.id %}" 
+                                        class="btn btn-success btn-sm"
+                                        onclick="setTimeout(function(){ location.reload(); }, 500);">
+                                        Unblock
+                                    </a>                                
+                                {% endif %}
+    
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="text-right mt-3">
+            <a href="{% url 'product_management' %}" class="btn btn-secondary">Back to Product Management</a>
+        </div>
+    </div>    
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+
+{% endblock %}

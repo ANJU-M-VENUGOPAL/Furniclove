@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        h1 { text-align: center; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #333;
+            padding: 5px;
+            font-size: 12px;
+            word-break: break-all;
+        }
+        th {
+            background-color: #ddd;
+        }
+        .summary {
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        th:nth-child(1), td:nth-child(1) {
+    min-width: 80px;
+}
+    </style>
+</head>
+<body>
+    <h1>Sales Report</h1>
+    <div class="summary">
+        <p>Total Sales: ₹{{ total_sales }}</p>
+        <p>Total Orders: {{ total_orders }}</p>
+        <p>Total Items Sold: {{ total_items_sold }}</p>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>User</th>
+                <th>Date</th>
+                <th>Total Amount (Rs)</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td>{{ order.order_id }}</td>
+                <td>{{ order.user__username }}</td>
+                <td>{{ order.date|date:"Y-m-d H:i" }}</td>
+                <td>{{ order.total }}</td>
+                <td>{{ order.status }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">No orders found</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

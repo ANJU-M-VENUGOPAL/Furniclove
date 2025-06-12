@@ -1,0 +1,92 @@
+{% extends 'admin_home.html' %}
+{% load static %}
+{% block title %}Add Product{% endblock %}
+
+{% block content %}
+<div class="card p-4 shadow-sm">
+    <h2 class="mb-4 text-primary">Add New Product</h2>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="name">Name:</label>
+            <input type="text" class="form-control" id="name" name="name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description:</label>
+            <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+        </div>
+
+        <!-- Dropdown for Categories -->
+        <div class="form-group">
+            <label for="category">Category:</label>
+            <select class="form-control" id="category" name="category" required>
+                <option value="" disabled selected>Select Category</option>
+                {% for category in categories %}
+                <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="original_price">Original Price:</label>
+            <input type="number" class="form-control" id="original_price" name="original_price" step="0.01" required>
+        </div>
+
+        <div class="form-group">
+            <label for="offer_percent">Offer Percent:</label>
+            <input type="number" class="form-control" id="offer_percent" name="offer_percent" step="0.01">
+        </div>
+
+        <div class="form-group">
+            <label for="stock">Stock:</label>
+            <input type="number" class="form-control" id="stock" name="stock" required>
+        </div>
+
+        <div class="form-group">
+            <label for="image">Main Image:</label>
+            <input type="file" class="form-control" id="image" name="image" required>
+        </div>
+
+        <div class="form-group">
+            <label for="thumbnail_1">Thumbnail 1:</label>
+            <input type="file" class="form-control" id="thumbnail_1" name="thumbnail_1">
+        </div>
+
+        <div class="form-group">
+            <label for="thumbnail_2">Thumbnail 2:</label>
+            <input type="file" class="form-control" id="thumbnail_2" name="thumbnail_2">
+        </div>
+
+        <div class="form-group">
+            <label for="thumbnail_3">Thumbnail 3:</label>
+            <input type="file" class="form-control" id="thumbnail_3" name="thumbnail_3">
+        </div>
+
+        <div class="form-group">
+            <label for="thumbnail_4">Thumbnail 4:</label>
+            <input type="file" class="form-control" id="thumbnail_4" name="thumbnail_4">
+        </div>
+
+        <div class="form-group">
+        <label for="related_products">Related Products:</label>
+        <select class="form-control" id="related_products" name="related_products" multiple>
+            {% for prod in all_products %}
+                <option value="{{ prod.id }}">{{ prod.name }} - ₹{{ prod.original_price }}</option>
+            {% endfor %}
+        </select>
+        <small class="form-text text-muted">Select multiple products.</small>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Add Product</button>
+    </form>
+
+    
+    <div class="text-right mt-3">
+        <a href="{% url 'product_management' %}" class="btn btn-secondary">Back to Product Management</a>
+    </div>
+</div>
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}

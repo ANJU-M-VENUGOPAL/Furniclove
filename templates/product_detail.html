@@ -1,0 +1,436 @@
+{% extends 'base.html' %}
+{% load static %}
+
+
+{% block content %}	
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  .breadcrumbs {
+      background: #d5f1f5;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+  }
+
+  .breadcrumbs a {
+      color: #084f9b;
+      text-decoration: none;
+  font-size: 0.9rem;
+      padding: 15px 20px
+  
+  }
+
+  .breadcrumbs a:hover {
+      text-decoration: underline;
+  }
+
+
+  .footer-section {
+    background: linear-gradient(130deg,#aadeee, #4eadb4 );
+  margin-top: 20px;
+ }   
+
+
+/* Product Image Styling */
+.product-images img.main-image {
+    max-width: 80%;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.product-images .thumbnail-container img {
+    width: 100px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    cursor: pointer;
+    margin: 8px;
+    
+}
+
+.product-images .thumbnail-container img:hover {
+    border-color: #007bff;
+}
+
+/* Stock Information */
+.text-success {
+    color: #28a745; /* Green for in-stock */
+    font-weight: bold;
+}
+
+.text-danger {
+    color: #dc3545; /* Red for out-of-stock */
+    font-weight: bold;
+}
+
+.star-rating {
+  direction: rtl;
+  display: inline-flex;
+  user-select: none;
+}
+.star-rating input[type="radio"] {
+  display: none;
+}
+.star-rating label {
+  color: #ddd;
+  font-size: 2rem;
+  cursor: pointer;
+  transition: color 0.2s;
+  margin: 0 2px;
+}
+.star-rating label .fa-star {
+  pointer-events: none;
+}
+.star-rating input[type="radio"]:checked ~ label,
+.star-rating label:hover,
+.star-rating label:hover ~ label {
+  color: gold;
+}
+
+.product-images img.main-image {
+    max-width: 80%;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: transform 0.3s ease-in-out;
+}
+
+.product-images img.main-image:hover {
+    transform: scale(1.5); /* Zoom in effect */
+}
+
+
+</style>
+</head>
+<body>
+
+    <!-- Breadcrumbs -->
+    <div class="breadcrumbs">
+        <a href="/">Home</a> > <a href="/shop">Shop</a> > 
+        <a href="{% url 'product_detail' product_id=product.id %}">{{ product.name }}</a>
+    </div>
+
+<div class="container mt-4">
+    <!-- Product Section -->
+    <div class="row">
+        <!-- Product Images -->
+        <div class="col-md-6 product-images">
+            {% if selected_variant %}
+                <img id="mainImage" src="{{ selected_variant.main_image.url }}" alt="{{ product.name }}" class="main-image">
+            {% else %}
+                <img id="mainImage" src="{{ product.image.url }}" alt="{{ product.name }}" class="main-image">
+            {% endif %}
+            
+            <!-- Thumbnails -->
+            <div class="thumbnail-container d-flex">
+                {% if selected_variant %}
+                    {% if selected_variant.thumbnail_1 %}
+                        <img src="{{ selected_variant.thumbnail_1.url }}" class="thumbnail" onclick="changeMainImage(this)">
+                    {% endif %}
+                    {% if selected_variant.thumbnail_2 %}
+                        <img src="{{ selected_variant.thumbnail_2.url }}" class="thumbnail" onclick="changeMainImage(this)">
+                    {% endif %}
+                    {% if selected_variant.thumbnail_3 %}
+                        <img src="{{ selected_variant.thumbnail_3.url }}" class="thumbnail" onclick="changeMainImage(this)">
+                    {% endif %}
+                    {% if selected_variant.thumbnail_4 %}
+                        <img src="{{ selected_variant.thumbnail_4.url }}" class="thumbnail" onclick="changeMainImage(this)">
+                    {% endif %}
+                {% else %}
+                    {% if product.thumbnail_1 %}
+                        <img src="{{ product.thumbnail_1.url }}" class="thumbnail" onclick="changeMainImage(this)">
+                    {% endif %}
+                    {% if product.thumbnail_2 %}
+                        <img src="{{ product.thumbnail_2.url }}" class="thumbnail" onclick="changeMainImage(this)">
+                    {% endif %}
+                    {% if product.thumbnail_3 %}
+                        <img src="{{ product.thumbnail_3.url }}" class="thumbnail" onclick="changeMainImage(this)">
+                    {% endif %}
+                    {% if product.thumbnail_4 %}
+                        <img src="{{ product.thumbnail_4.url }}" class="thumbnail" onclick="changeMainImage(this)">
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Product Details -->
+        <div class="col-md-6">
+            <h2>{{ product.name }}</h2>
+
+            <p>{{ product.category.name }}</p>
+
+
+            <p>{{ product.description }}</p>
+
+            <h4>
+                {% if selected_variant and selected_variant.price_override %}
+                    <!-- Original Price with strike-through for the variant (price_override) -->
+                    <span style="font-size: 1.2rem; text-decoration: line-through; margin-right: 10px;">Rs. {{ selected_variant.price_override }}</span>
+                    
+                    <!-- Discounted Price for the variant -->
+                    <span style="font-size: 1.5rem; font-weight: bold; margin-right: 10px;">Rs. {{ discount_price_variant }}</span>
+                    
+                    <!-- Discount Percentage for the variant -->
+                    <span style="color: green; font-size: 1rem;">
+                        {% if discount_percent_variant > 0 %}
+                            {{ discount_percent_variant|floatformat:2 }}% OFF (Product Offer)
+                        {% endif %}
+                    </span>
+                {% else %}
+                    <!-- Original Price with strike-through for the product -->
+                    <span style="font-size: 1.2rem; text-decoration: line-through; margin-right: 10px;">Rs. {{ product.original_price }}</span>
+                    
+                    <!-- Discounted Price for the product -->
+                    <span style="font-size: 1.5rem; font-weight: bold; margin-right: 10px;">Rs. {{ discount_price_variant }}</span>
+                    
+                    <!-- Discount Percentage for the product -->
+                    <span style="color: green; font-size: 1rem;">
+                        {% if discount_percent_variant > 0 %}
+                            {{ discount_percent_variant|floatformat:0 }}% OFF (Product Offer)
+
+                        {% elif discount_percent_variant == 0 %}
+                            <!-- If no variant-specific discount, show category offer -->
+                            {% if category_discount_percent > 0 %}
+                                {{ category_discount_percent|floatformat:0 }}% OFF (Category Offer)
+
+                            {% endif %}
+                        {% endif %}
+                    </span>
+                {% endif %}
+            </h4>
+        
+
+            <p id="stock-status">
+                {% if selected_variant %}
+                    {% if selected_variant.stock > 0 %}
+                        <span class="text-success fw-bold">In Stock ({{ selected_variant.stock }} units available)</span>
+                    {% else %}
+                        <span class="text-danger fw-bold">Out of Stock</span>
+                    {% endif %}
+                {% else %}
+                    {% if product.stock > 0 %}
+                        <span class="text-success fw-bold">In Stock ({{ product.stock }} units available)</span>
+                    {% else %}
+                        <span class="text-danger fw-bold">Out of Stock</span>
+                    {% endif %}
+                {% endif %}
+            </p>
+            
+
+            
+            
+            {% if color_variants and color_variants|length > 0 %}
+                <h5>Available Colors</h5>
+                {% for variant in color_variants %}
+                    <a href="{% url 'product_detail_with_variant' product.id variant.id %}" class="d-flex align-items-center mb-2 text-decoration-none">
+                        <img src="{{ variant.main_image.url }}" alt="{{ variant.color_name }}" style="width: 50px; height: 50px; border-radius: 8px; margin-right: 10px;">
+                        <span>{{ variant.color_name }}</span>
+                    </a>
+                {% endfor %}
+            {% endif %}
+
+            <form action="{% if selected_variant %}{% url 'add_to_cart' product.id selected_variant.id %}{% else %}{% url 'add_to_cart' product.id %}{% endif %}" method="POST">
+                {% csrf_token %}
+                <button id="add-to-cart" type="submit" class="btn btn-primary"
+                        {% if selected_variant and selected_variant.stock <= 0 %}disabled{% elif not selected_variant and product.stock <= 0 %}disabled{% endif %}>
+                    {% if selected_variant and selected_variant.stock > 0 %}
+                        Add to Cart
+                    {% elif not selected_variant and product.stock > 0 %}
+                        Add to Cart
+                    {% else %}
+                        Out of Stock
+                    {% endif %}
+                </button>
+            </form>
+           
+
+            <form action="{% if selected_variant %}{% url 'add_to_wishlist_variant' product.id selected_variant.id %}{% else %}{% url 'add_to_wishlist' product.id %}{% endif %}" method="POST" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-warning" style="background-color: #ffc107; color: #212529; border: none; padding: 10px 20px; font-weight: bold; transition: 0.3s;margin-top:10px;">
+                    Add to Wishlist
+                </button>
+            </form>
+                       
+            
+                       
+        </div>
+    </div>
+
+    <!-- Reviews Section -->
+    <h4>Reviews</h4>
+    <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#reviewModal">
+    Write a Review
+    </button>
+    <div id="reviewSection">
+    {% for review in product.reviews.all %}
+        <div class="mb-2">
+        <strong>{{ review.user.username }}</strong><br>
+        <span>
+            {% for i in "12345" %}
+            {% if review.rating|add:'0' >= i|add:'0' %}
+                <i class="fas fa-star text-warning"></i>
+            {% else %}
+                <i class="far fa-star text-warning"></i>
+            {% endif %}
+            {% endfor %}
+        </span>
+        <p>{{ review.comment }}</p>
+        </div>
+        <hr>
+    {% empty %}
+        <p>No reviews yet. Be the first to review!</p>
+    {% endfor %}
+    </div>
+
+    <!-- Review Modal -->
+    <div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+        <form id="reviewForm" method="post">
+            {% csrf_token %}
+            <div class="modal-header">
+            <h5 class="modal-title" id="reviewModalLabel">Write a Review</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+            <label class="mb-1">Rating:</label>
+            <div class="star-rating mb-3">
+                <input type="radio" id="star5" name="rating" value="5"><label for="star5" title="5 stars"><i class="fa fa-star"></i></label>
+                <input type="radio" id="star4" name="rating" value="4"><label for="star4" title="4 stars"><i class="fa fa-star"></i></label>
+                <input type="radio" id="star3" name="rating" value="3"><label for="star3" title="3 stars"><i class="fa fa-star"></i></label>
+                <input type="radio" id="star2" name="rating" value="2"><label for="star2" title="2 stars"><i class="fa fa-star"></i></label>
+                <input type="radio" id="star1" name="rating" value="1"><label for="star1" title="1 star"><i class="fa fa-star"></i></label>
+            </div>
+            <label for="id_comment">Comment:</label>
+            <textarea id="id_comment" name="comment" class="form-control" rows="4" required></textarea>
+            </div>
+            <div class="modal-footer">
+            <button type="submit" class="btn btn-success">Submit</button>
+            </div>
+        </form>
+        </div>
+    </div>
+    </div>
+
+<div class="related-products mt-5">
+    <h5 class="mb-4">Related Products</h5>
+    {% if related_products %}
+        <div class="row gx-2 gy-3">
+            {% for rel_product in related_products %}
+                <div class="col-6 col-sm-4 col-md-3">
+                    <div class="card h-100 border-0 shadow-sm" style="font-size: 0.85rem;">
+                        <a href="{% url 'product_detail' product_id=rel_product.id %}" class="text-decoration-none text-dark">
+                            <img src="{{ rel_product.image.url }}" class="card-img-top rounded-2" alt="{{ rel_product.name }}" style="height:220px; object-fit:contain; padding: 10px;">
+                            <div class="card-body p-2 text-center">
+                                <h6 class="card-title mb-1" style="font-weight: 600;">{{ rel_product.name|truncatechars:25 }}</h6>
+                                <p class="card-text text-primary mb-0">Rs. {{ rel_product.discounted_price }}</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted">No related products found.</p>
+    {% endif %}
+</div>
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    function checkStock(productId, variantId = null) {
+        let url = variantId 
+            ? `/check-product-stock/${productId}/${variantId}/` 
+            : `/check-product-stock/${productId}/`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                let stockStatus = document.getElementById("stock-status");
+                let addToCartBtn = document.getElementById("add-to-cart");
+
+                if (data.stock > 0) {
+                    stockStatus.innerHTML = `<span class="text-success fw-bold">In Stock (${data.stock} units available)</span>`;
+                    addToCartBtn.disabled = false;
+                } else {
+                    stockStatus.innerHTML = `<span class="text-danger fw-bold">Out of Stock</span>`;
+                    addToCartBtn.disabled = true;
+                }
+            })
+            .catch(error => console.error("Error fetching stock:", error));
+    }
+
+    // Run stock check initially
+    document.addEventListener("DOMContentLoaded", function() {
+        let productId = "{{ product.id }}";
+        let variantId = "{{ selected_variant.id|default_if_none:'' }}";
+        checkStock(productId, variantId);
+
+        // Auto-refresh stock every 5 seconds
+        setInterval(() => {
+            checkStock(productId, variantId);
+        }, 5000);  // Adjust the interval as needed
+    });
+
+    function changeMainImage(thumbnail) {
+        // Get the URL of the thumbnail image that was clicked
+        var mainImage = document.getElementById("mainImage");
+        mainImage.src = thumbnail.src; // Change the main image to the clicked thumbnail's image
+        mainImage.alt = thumbnail.alt; // Update the alt attribute of the main image to match the clicked thumbnail's alt
+    }
+</script>
+<script>
+$(document).ready(function() {
+  $('#reviewForm').on('submit', function(e) {
+    e.preventDefault();
+    const form = $(this);
+    let fullStars = 0;
+    let emptyStars = 0;
+    let newReview = "";
+
+    $.ajax({
+      url: "{% url 'submit_review' product.id %}",
+      type: 'POST',
+      data: {
+        'rating': $('input[name=rating]:checked').val(),
+        'comment': $('#id_comment').val(),
+        'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val(),
+      },
+      success: function(response) {
+        // Prepare review HTML to add later
+        fullStars = Math.floor(response.rating);
+        emptyStars = 5 - fullStars;
+        let starsHTML = '';
+        for (let i = 0; i < fullStars; i++) starsHTML += '<i class="fas fa-star text-warning"></i>';
+        for (let i = 0; i < emptyStars; i++) starsHTML += '<i class="far fa-star text-warning"></i>';
+        newReview = `
+          <div class="mb-2">
+            <strong>${response.user}</strong><br>
+            <span>${starsHTML}</span>
+            <p>${response.comment}</p>
+          </div><hr>
+        `;
+
+        // Hide modal, and after it's fully hidden, update DOM and reset form
+        $('#reviewModal').modal('hide');
+        $('#reviewModal').one('hidden.bs.modal', function() {
+          $('#reviewSection').prepend(newReview);
+          form[0].reset();
+        });
+      },
+      error: function(xhr) {
+        alert("Something went wrong!");
+      }
+    });
+  });
+});
+</script>
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
+
+{% endblock %}
