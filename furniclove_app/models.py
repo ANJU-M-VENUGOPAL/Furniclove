@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-from admin_panel.models import Product , ColorVariant 
+from admin_panel.models import Product , ColorVariant, Coupon 
 from django.utils.timezone import now 
 import uuid
 from datetime import datetime, timedelta
@@ -132,7 +132,6 @@ class Order(models.Model):
     ]
     
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    order_id = models.CharField(max_length=10, unique=True, editable=False)  
     date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
     total = models.DecimalField(max_digits=10, decimal_places=2)
@@ -143,21 +142,13 @@ class Order(models.Model):
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     final_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     delivery_charge = models.DecimalField(max_digits=10, decimal_places=2, default=50.00) #delivery charge
+    coupon = models.ForeignKey(Coupon, null=True, blank=True, on_delete=models.SET_NULL)
 
 
     
-    def save(self, *args, **kwargs):
-        if not self.order_id:  # Only generate if it's empty
-            self.order_id = self.generate_order_id()
-        super().save(*args, **kwargs)
-    
-
-    def generate_order_id(self):
-        while True:
-            order_id = ''.join(random.choices(string.ascii_uppercase, k=2)) + \
-                       ''.join(random.choices(string.digits, k=4))
-            if not Order.objects.filter(order_id=order_id).exists():  
-                return order_id
+    @property
+    def order_id(self):
+        return f"ORD{self.id:06d}"  
 
     def __str__(self):
         return f"Order {self.order_id} - {self.user.username}"

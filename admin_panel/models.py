@@ -2,12 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils.timezone import now
 
-import uuid
 
 
-
-def generate_order_id():
-    return str(uuid.uuid4())[:8]  # Take only the first 8 characters of UUID
 
 
 class Category(models.Model):
