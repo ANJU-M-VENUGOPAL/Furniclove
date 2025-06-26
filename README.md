@@ -15,7 +15,7 @@ FurniClove is a modern e-commerce platform for furniture shopping. It allows use
 
 ## Tech Details
 
-- Backend: Django, Python
+- Backend:  Django, Python
 - Frontend: HTML, CSS, Bootstrap, JavaScript (jQuery)
 - Database: SQLite (development), PostgreSQL/MySQL (production-ready)
 - PDF Generation: WeasyPrint
