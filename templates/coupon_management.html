@@ -2,6 +2,27 @@
 {% block title %}Coupon Management{% endblock %}
 
 {% block content %}
+{% if messages %}
+  <div class="container d-flex justify-content-center mt-4">
+    <div style="max-width: 400px; width: 100%;">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-lg" role="alert" style="border-radius:0.8rem;font-size:1.1rem;">
+          {% if message.tags == "success" %}
+            <i class="fa-solid fa-circle-check me-2 text-success"></i>
+          {% elif message.tags == "error" %}
+            <i class="fa-solid fa-circle-xmark me-2 text-danger"></i>
+          {% elif message.tags == "warning" %}
+            <i class="fa-solid fa-triangle-exclamation me-2 text-warning"></i>
+          {% else %}
+            <i class="fa-solid fa-circle-info me-2 text-primary"></i>
+          {% endif %}
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
 
 <div class="card p-4 shadow-sm">
     <h2 class="mb-4 text-primary">Coupon Management</h2>
@@ -37,8 +58,10 @@
                             <td>{{ coupon.active }}</td>
                             <td>  <!-- ✅ Edit/Delete buttons aligned properly -->
                                 <a href="{% url 'edit_coupon' coupon.id %}" class="btn btn-warning btn-sm">Edit</a>
-                                <a href="{% url 'delete_coupon' coupon.id %}" class="btn btn-danger btn-sm" 
-                                   onclick="return confirm('Are you sure you want to delete this coupon?')">Delete</a>
+                                <button type="button" class="btn btn-danger btn-sm delete-btn"
+        data-coupon-id="{{ coupon.id }}" data-coupon-code="{{ coupon.code }}">
+  Delete
+</button>
                             </td>
                         </tr>
                     {% endfor %}
@@ -50,7 +73,53 @@
             </tbody>
         </table>
     </div>
+    <!-- Delete Confirmation Modal -->
+<!-- Delete Toast -->
+<div id="deleteToast" class="toast align-items-center text-bg-danger border-0 position-fixed top-0 start-50 translate-middle-x mt-3 shadow" role="alert" aria-live="assertive" aria-atomic="true" style="z-index:1080; min-width:300px;">
+  <div class="d-flex">
+    <div class="toast-body">
+      <i class="fa-solid fa-triangle-exclamation me-2"></i>
+      Are you sure you want to delete <strong id="toastCouponCode"></strong>?
+    </div>
+    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+  </div>
+  <div class="px-3 pb-2">
+    <button id="deleteYesBtn" class="btn btn-sm btn-light me-2">Delete</button>
+    <button id="deleteNoBtn" class="btn btn-sm btn-secondary">Cancel</button>
+  </div>
+</div>
 </div>
 
-<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+<script>
+  setTimeout(function() {
+    var alerts = document.querySelectorAll('.alert');
+    alerts.forEach(function(alert) {
+      alert.classList.remove('show');
+      alert.classList.add('hide');
+      setTimeout(function() {
+        alert.remove();
+      }, 300);
+    });
+  }, 4000);
+</script>
+
+<script>
+let couponToDeleteId = null;
+document.querySelectorAll('.delete-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    couponToDeleteId = this.dataset.couponId;
+    document.getElementById('toastCouponCode').textContent = this.dataset.couponCode;
+    let toast = new bootstrap.Toast(document.getElementById('deleteToast'));
+    toast.show();
+  });
+});
+document.getElementById('deleteYesBtn').onclick = function() {
+  if (couponToDeleteId) window.location.href = `/delete_coupon/${couponToDeleteId}/`;
+};
+document.getElementById('deleteNoBtn').onclick = function() {
+  let toast = bootstrap.Toast.getInstance(document.getElementById('deleteToast'));
+  toast.hide();
+};
+</script>
+
 {% endblock %}
