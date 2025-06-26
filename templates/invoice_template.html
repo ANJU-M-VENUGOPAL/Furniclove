@@ -9,6 +9,9 @@
         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
         table, th, td { border: 1px solid #000; }
         th, td { padding: 8px; text-align: left; }
+        .summary-table { width: 50%; margin-left:auto; margin-right:auto; }
+        .summary-table th, .summary-table td { border:none; }
+        .right { text-align: right; }
     </style>
 </head>
 <body>
@@ -17,9 +20,8 @@
     </div>
     <p><strong>Order ID:</strong> {{ order.order_id }}</p>
     <p><strong>Order Date:</strong> {{ order.date|date:"F j, Y, g:i a" }}</p>
-    <p><strong>Customer:</strong> {{ order.order_address.full_name }}</p>
-    <p><strong>Address:</strong> {{ order.order_address.address }}, {{ order.order_address.district }}, {{ order.order_address.state }}, {{ order.order_address.country }}, {{ order.order_address.zipcode }}</p>
-    <p><strong>Total Amount:</strong> ₹{{ order.total }}</p>
+    <p><strong>Customer:</strong> {{ order_address.full_name }}</p>
+    <p><strong>Address:</strong> {{ order_address.address }}, {{ order_address.district }}, {{ order_address.state }}, {{ order_address.country }}, {{ order_address.zipcode }}</p>
 
     <h4>Order Items</h4>
     <table>
@@ -37,10 +39,44 @@
                 <td>{{ item.product.name }}</td>
                 <td>{{ item.quantity }}</td>
                 <td>₹{{ item.price }}</td>
-                <td>₹{{ item.subtotal }}</td>
+                <td>₹{{ item.quantity|floatformat:0|add:""|floatformat:2|floatformat }}{{ item.price|floatformat:2 }}</td>
             </tr>
             {% endfor %}
         </tbody>
+    </table>
+
+    <!-- Order Summary -->
+    <table class="summary-table">
+        <tr>
+            <th>Subtotal:</th>
+            <td class="right">₹{{ order.subtotal|floatformat:2 }}</td>
+        </tr>
+        <tr>
+            <th>Delivery Charge:</th>
+            <td class="right">₹{{ order.delivery_charge|floatformat:2 }}</td>
+        </tr>
+        {% if coupon_code %}
+        <tr>
+            <th>Coupon Code:</th>
+            <td class="right">{{ coupon_code }}</td>
+        </tr>
+        {% endif %}
+        {% if coupon_discount_percent %}
+        <tr>
+            <th>Coupon Discount:</th>
+            <td class="right">{{ coupon_discount_percent|floatformat:0 }}% off</td>
+        </tr>
+        {% endif %}
+        {% if coupon_discount and coupon_discount > 0 %}
+        <tr>
+            <th>Coupon Discount Amount:</th>
+            <td class="right">- Rs{{ coupon_discount|floatformat:2 }}</td>
+        </tr>
+        {% endif %}
+        <tr>
+            <th><strong>Grand Total:</strong></th>
+            <td class="right"><strong>₹{{ order.total|floatformat:2 }}</strong></td>
+        </tr>
     </table>
 
     <div class="footer">

@@ -2,73 +2,88 @@
 {% load static %}
 {% block content %}
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 <style>
-    .card {
-        background: #ffffff;
-        border-radius: 10px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        padding: 20px;
-        margin-bottom: 20px;
+    .order-meta {
+        background: #f8fafc;
+        border-radius: 8px;
+        box-shadow: 0 1px 6px rgba(76,173,180,0.08);
+        padding: 24px 30px 10px 30px;
+        margin-bottom: 30px;
     }
-
-    .card-title {
-        font-size: 1.4rem;
-        font-weight: bold;
+    .order-meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px 40px;
+        align-items: center;
+        margin-bottom: 0.7rem;
+    }
+    .order-meta-label {
+        font-weight: 600;
         color: #00796b;
-        margin-bottom: 10px;
+        min-width: 120px;
     }
-
-    .badge {
-    font-size: 0.9rem;
-    padding: 5px 10px;
-    border-radius: 5px;
-    color: white !important;
-}
-.bg-warning { background-color: #ffc107 !important; }
-.bg-primary { background-color: #007bff !important; }
-.bg-success { background-color: #28a745 !important; }
-.bg-danger { background-color: #dc3545 !important; }
-.bg-secondary { background-color: #6c757d !important; }
-
-
-    .table th, .table td {
+    .order-meta-content {
+        color: #222;
+    }
+    .order-status {
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+    .order-summary-table th,
+    .order-summary-table td {
+        padding: 8px 0;
+        border: none;
+        background: none !important;
+    }
+    .order-summary-table th {
+        color: #888;
+        font-weight: 500;
+        text-align: left;
+    }
+    .order-summary-table .total-row th,
+    .order-summary-table .total-row td {
+        color: #00796b;
+        font-size: 1.15rem;
+        font-weight: bold;
+        border-top: 1.5px solid #e0f2f1;
+    }
+    .order-section-title {
+        font-size: 1.12rem;
+        color: #00796b;
+        font-weight: 700;
+        margin: 32px 0 14px 2px;
+        letter-spacing: 0.2px;
+    }
+    .order-address-card {
+        background: #f5f5f5;
+        border-radius: 7px;
+        padding: 18px 23px;
+        margin-bottom: 16px;
+    }
+    .order-products-table th, .order-products-table td {
         vertical-align: middle;
         text-align: center;
+        font-size: 1.01rem;
     }
-
-    .table img {
-        width: 50px;
-        height: 50px;
+    .order-products-table th {
+        background: #4eadb4;
+        color: #fff;
+    }
+    .order-products-table img {
+        width: 44px;
+        height: 44px;
         object-fit: cover;
         border-radius: 5px;
+        margin-bottom: 2px;
+        border: 1px solid #e0f7fa;
     }
-
-    .table th {
-        background-color: #4eadb4;
-        color: white;
+    .badge {
+        font-size: 0.92rem;
+        border-radius: 5px;
     }
-
-    .table-hover tbody tr:hover {
-        background-color: #e0f7fa;
-    }
-
-    .text-primary {
-        font-size: 1.5rem;
-        font-weight: bold;
-    }
-
-    .btn-danger {
-        font-size: 1.2rem;
-        padding: 10px 20px;
-        border-radius: 8px;
-        transition: background-color 0.3s ease-in-out;
-    }
-
-    .btn-danger:hover {
-        background-color: #c62828;
-    }
-    .breadcrumbs {
+    .btn-return { font-size: 0.97rem; }
+     .breadcrumbs {
         background: #d5f1f5;
         padding: 15px 20px;
         border-radius: 8px;
@@ -114,32 +129,6 @@
         background-color: #11a1ac;  
         color: white; 
     }
-
-    .return-form {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 10px;
-    }
-
-    .return-form textarea {
-        width: 70%;
-        resize: none;
-        margin-right: 10px;
-    }
-
-    .btn-return {
-        background-color: #ffc107;
-        color: #212529;
-        border-radius: 5px;
-        padding: 10px 15px;
-        transition: 0.3s;
-    }
-
-    .btn-return:hover {
-        background-color: #ff9800;
-        color: white;
-    }
 </style>
 
 <div class="breadcrumbs mb-4">
@@ -156,195 +145,226 @@
                 <a href="{% url 'user_orders' %}" class="list-group-item list-group-item-action py-3 custom-link active">Orders</a>
                 <a href="{% url 'checkout' %}" class="list-group-item list-group-item-action py-3 custom-link">Payments</a>
                 <a href="{% url 'wallet' %}" class="list-group-item list-group-item-action py-3 custom-link">Wallet</a>
-
             </div>
         </div>
 
         <div class="col-md-9">
             <h2 class="mb-4 text-center text-primary">Order Details</h2>
-
-            <div class="card">
-                <h5 class="card-title">Order ID: <span class="text-dark">{{ order.order_id }}</span></h5>
-                <p><strong>Status:</strong>
-                    <span class="badge 
-                    {% if order.status == 'Pending' %}bg-warning text-dark
-                    {% elif order.status == 'Shipped' %}bg-primary
-                    {% elif order.status == 'Delivered' %}bg-success
-                    {% elif order.status == 'Cancelled' %}bg-danger
-                    {% else %}bg-secondary
-                    {% endif %}">
-                    {{ order.status }}
+            <div class="card mb-4" style="border-radius: 20px; background: rgba(255,255,255,0.93); box-shadow: 0 8px 30px rgba(44,62,80,0.11);">
+                <div class="row g-0 align-items-center py-3 px-2" style="min-height:120px;">
+                <!-- LEFT: Order info -->
+                <div class="col-md-7 col-12 px-4">
+                    <div class="mb-1">
+                    <span style="font-size:1.08rem; font-weight:600;">Order ID:</span>
+                    <span class="ms-1">{{ order.order_id }}</span>
+                    </div>
+                    <div class="mb-1">
+                    <span style="font-size:1.08rem; font-weight:600;">Order Date:</span>
+                    <span class="ms-1">{{ order.date|date:"F j, Y, g:i a" }}</span>
+                    </div>
+                    <div class="mb-1">
+                    <span style="font-size:1.08rem; font-weight:600;">Status:</span>
+                    <span class="badge
+                        {% if order.status == 'Pending' %}bg-warning text-dark
+                        {% elif order.status == 'Shipped' %}bg-primary
+                        {% elif order.status == 'Delivered' %}bg-success
+                        {% elif order.status == 'Cancelled' %}bg-danger
+                        {% else %}bg-secondary
+                        {% endif %}">
+                        {{ order.status }}
                     </span>
-                </p>
-
-                <p><strong>Payment Method:</strong> <span class="text-dark">{{ order.payment_method }}</span></p>
-                <p><strong>Payment Status:</strong>
-                    <span class="badge 
+                    </div>
+                    <div class="mb-1">
+                    <span style="font-size:1.08rem; font-weight:600;">Payment:</span>
+                    <span class="ms-1 text-dark">{{ order.payment_method }}</span>
+                    <span class="badge
                         {% if order.payment_status == 'Pending' %}bg-warning text-dark
                         {% elif order.payment_status == 'Paid' %}bg-success
                         {% elif order.payment_status == 'Failed' %}bg-danger
                         {% else %}bg-secondary
-                        {% endif %}">
+                        {% endif %} ms-1">
                         {{ order.payment_status }}
                     </span>
-                </p>
+                    </div>
+                    {% if razorpay_payment_id %}
+                    <div class="mb-1">
+                    <span style="font-size:1.08rem; font-weight:600;">Razorpay ID:</span>
+                    <span class="text-primary ms-1">{{ razorpay_payment_id }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <!-- RIGHT: Total -->
+                <div class="col-md-5 col-12 text-center mt-4 mt-md-0 px-4">
+                    <div style="font-size:1.18rem; color:#333; font-weight:600;">Total Amount</div>
+                    <div style="font-size:2.2rem; font-weight: bold; color:#00796b; letter-spacing:1px;">
+                    Rs {{ order.total|floatformat:2 }}
+                    </div>
+                </div>
+                </div>
+        </div>
 
-                {% if razorpay_payment_id %}
-                    <p><strong>Razorpay Payment ID:</strong> <span class="text-primary">{{ razorpay_payment_id }}</span></p>
-                {% endif %}
-                
-                <p><strong>Order Date:</strong> {{ order.date|date:"F j, Y, g:i a" }}</p>
-                <p class="font-weight-bold"><strong>Total Amount:</strong> ₹{{ order.total }}</p>
-            </div>
-            
-            
-
-                <h4 class="mt-4 text-muted font-weight-bold">Products in this Order</h4>
-                <div class="table-responsive">
-                    <table class="table table-bordered table-hover">
-                        <thead>
-                            <tr>
-                                <th>Product</th>
-                                <th>Quantity</th>
-                                <th>Price (Each)</th>
-                                <th>Subtotal</th>
-                                <th>Return</th>
-                            
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in order_items %}
-                            <tr>
-                                
-                                <td>
-                                    {% if item.variant and item.variant.main_image %}
-                                        <img src="{{ item.variant.main_image.url }}" alt="{{ item.variant.color_name }}">
-                                    {% else %}
-                                        <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
-                                    {% endif %}
-                                        <br> {{ item.product.name }}
-                                    {% if item.variant %}
-                                        <br><small>Variant: {{ item.variant.color_name }}</small>
-                                    {% endif %}
-                                </td>
-                                <td>{{ item.quantity }}</td>
-                                <td>₹{{ item.price|floatformat:2 }}</td>
-                                <td>₹{{ item.subtotal|floatformat:2 }}</td>
-                                
-                                <td> 
-                                    {% if order.status == "Delivered" %}
-                                        {% if not item.return_obj %}
-                                            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#returnModal{{ item.id }}">
+        
+            <!-- Products Table -->
+            <div class="order-section-title">Ordered Products</div>
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered order-products-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Price (Each)</th>
+                            <th>Subtotal</th>
+                            <th>Return</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order_items %}
+                        <tr>
+                            <td>
+                                {% if item.variant and item.variant.main_image %}
+                                    <img src="{{ item.variant.main_image.url }}" alt="{{ item.variant.color_name }}">
+                                {% else %}
+                                    <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
+                                {% endif %}
+                                <div>{{ item.product.name }}</div>
+                                {% if item.variant %}
+                                    <div class="text-muted" style="font-size:0.93em;">Variant: {{ item.variant.color_name }}</div>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.quantity }}</td>
+                            <td>₹{{ item.price|floatformat:2 }}</td>
+                            <td>₹{{ item.subtotal|floatformat:2 }}</td>
+                            <td>
+                                {% if order.status == "Delivered" %}
+                                    {% if not item.return_obj %}
+                                        <button type="button" class="btn btn-warning btn-return" data-bs-toggle="modal" data-bs-target="#returnModal{{ item.id }}">
                                             Return
-                                            </button>
-                        
-                                            <!-- Modal -->
-                                            <div class="modal fade" id="returnModal{{ item.id }}" tabindex="-1" aria-labelledby="returnModalLabel{{ item.id }}" aria-hidden="true">
-                                                <div class="modal-dialog">
-                                                    <div class="modal-content">
-                                                        <form method="POST" action="{% url 'return_product' order_id=order.id item_id=item.id %}">
-                                                            {% csrf_token %}
-                                                            <div class="modal-header">
-                                                                <h5 class="modal-title" id="returnModalLabel{{ item.id }}">Return Product</h5>
-                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </button>
+                                        <div class="modal fade" id="returnModal{{ item.id }}" tabindex="-1" aria-labelledby="returnModalLabel{{ item.id }}" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <form method="POST" action="{% url 'return_product' order_id=order.id item_id=item.id %}">
+                                                        {% csrf_token %}
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="returnModalLabel{{ item.id }}">Return Product</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <p><strong>{{ item.product.name }}</strong></p>
+                                                            <div class="form-group">
+                                                                <label for="reason{{ item.id }}">Reason for Return:</label>
+                                                                <textarea class="form-control" name="reason" id="reason{{ item.id }}" rows="4" required></textarea>
                                                             </div>
-                                                            <div class="modal-body">
-                                                                <p><strong>{{ item.product.name }}</strong></p>
-                                                                <div class="form-group">
-                                                                    <label for="reason{{ item.id }}">Reason for Return:</label>
-                                                                    <textarea class="form-control" name="reason" id="reason{{ item.id }}" rows="4" required></textarea>
-                                                                </div>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="submit" class="btn btn-danger">Submit Return</button>
-                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                            </div>
-                                                        </form>
-                                                    </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="submit" class="btn btn-danger">Submit Return</button>
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                        </div>
+                                                    </form>
                                                 </div>
                                             </div>
-                                        {% elif item.return_obj.status == "Requested" %}
-                                            <span class="text-warning">Return Requested</span>
-                                        {% elif item.return_obj.status == "Approved" %}
-                                            <span class="text-success">Returned</span>
-                                        {% elif item.return_obj.status == "Rejected" %}
-                                            <span class="text-danger">Return Rejected</span>
-                                        {% elif item.return_obj.status == "Refunded" %}
-                                            <span class="text-info">Refunded</span>   
-                                        {% endif %}
-                                    {% else %}
-                                        <span class="text-muted">Return Available</span>
+                                        </div>
+                                    {% elif item.return_obj.status == "Requested" %}
+                                        <span class="text-warning">Return Requested</span>
+                                    {% elif item.return_obj.status == "Approved" %}
+                                        <span class="text-success">Returned</span>
+                                    {% elif item.return_obj.status == "Rejected" %}
+                                        <span class="text-danger">Return Rejected</span>
+                                    {% elif item.return_obj.status == "Refunded" %}
+                                        <span class="text-info">Refunded</span>
                                     {% endif %}
-                                </td>
-                                
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="4" class="text-center text-danger">No items found in this order.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                                {% else %}
+                                    <span class="text-muted">Return Available</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-danger">No items found in this order.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
-                
-            
-
-            <h4 class="mt-4 text-muted font-weight-bold">Shipping Address</h4>
+            <!-- Shipping Address -->
+            <div class="order-section-title">Shipping Address</div>
             {% if order_address %}
-            <div class="card">
-                <p><strong>{{ order_address.full_name }}</strong></p>
-                <p>{{ order_address.address }}, {{ order_address.district }}, {{ order_address.state }}</p>
-                <p>{{ order_address.country }} - {{ order_address.zipcode }}</p>
+            <div class="order-address-card mb-4">
+                <div><strong>{{ order_address.full_name }}</strong></div>
+                <div>{{ order_address.address }}, {{ order_address.district }}, {{ order_address.state }}</div>
+                <div>{{ order_address.country }} - {{ order_address.zipcode }}</div>
             </div>
             {% else %}
             <p class="text-danger">No shipping address available.</p>
             {% endif %}
-
+            <!-- Order Summary -->
+            <div class="order-section-title">Order Summary</div>
+            <div class="order-address-card mb-4">
+                <table class="table order-summary-table mb-0">
+                    
+                    <tr>
+                        <th>Subtotal</th>
+                        <td class="text-end">₹{{ order.subtotal|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <th>Delivery Charge</th>
+                        <td class="text-end">₹{{ order.delivery_charge|floatformat:2 }}</td>
+                    </tr>
+                    <tr>
+                        <th>Coupon Discount</th>
+                        <td class="text-end text-success">
+                            {% if coupon_discount_percent %}
+                                <div>{{ coupon_discount_percent|floatformat:0 }}% off</div>
+                            {% endif %}
+                            {% if coupon_discount and coupon_discount > 0 %}
+                                <div>- ₹{{ coupon_discount|floatformat:2 }}</div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr class="total-row">
+                        <th>Total Payable</th>
+                        <td class="text-end">₹{{ order.total|floatformat:2 }}</td>
+                    </tr>
+                </table>
+            </div>
 
             {% if order.status != "Delivered" and order.status != "Cancelled" and order.status != "Failed" %}
-                <!-- Cancel Order Button (opens modal) -->
-                <button type="button" class="btn btn-danger btn-lg shadow-lg" data-bs-toggle="modal" data-bs-target="#cancelOrderModal">
-                    Cancel Order
-                </button>
-
-                <!-- Hidden Cancel Form -->
-                <form id="cancel-form" action="{% url 'cancel_order' order.id %}" method="POST" style="display:none;">
-                    {% csrf_token %}
-                </form>
-
-                <!-- Cancel Order Modal -->
-                <div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header bg-danger text-white">
-                                <h5 class="modal-title" id="cancelOrderModalLabel">Cancel Order</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <p>
-                                    <strong>We're sad to see you go! 😢</strong><br>
-                                    Are you sure you want to cancel this order?<br>
-                                    <span class="text-danger">This action cannot be undone.</span><br>
-                                    If you need help, our support team is here for you.
-                                </p>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Keep My Order</button>
-                                <button type="button" class="btn btn-danger" id="confirm-cancel-btn">Yes, Cancel Order</button>
-                            </div>
+            <button type="button" class="btn btn-danger btn-lg mb-3" data-bs-toggle="modal" data-bs-target="#cancelOrderModal">
+                Cancel Order
+            </button>
+            <form id="cancel-form" action="{% url 'cancel_order' order.id %}" method="POST" style="display:none;">
+                {% csrf_token %}
+            </form>
+            <div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title" id="cancelOrderModalLabel">Cancel Order</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>
+                                <strong>We're sad to see you go! 😢</strong><br>
+                                Are you sure you want to cancel this order?<br>
+                                <span class="text-danger">This action cannot be undone.</span><br>
+                                If you need help, our support team is here for you.
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Keep My Order</button>
+                            <button type="button" class="btn btn-danger" id="confirm-cancel-btn">Yes, Cancel Order</button>
                         </div>
                     </div>
                 </div>
+            </div>
             {% endif %}
 
-
             <div class="text-end mt-3">
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#invoiceModal">
+                <button class="btn btn-primary px-4" data-bs-toggle="modal" data-bs-target="#invoiceModal">
                     Invoice
                 </button>
             </div>
-            
             <!-- Invoice Modal -->
             <div class="modal fade" id="invoiceModal" tabindex="-1" aria-labelledby="invoiceModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -354,7 +374,6 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <!-- Simple Invoice Info -->
                             <p><strong>Order ID:</strong> {{ order.order_id }}</p>
                             <p><strong>Order Date:</strong> {{ order.date|date:"F j, Y, g:i a" }}</p>
                             <p><strong>Customer:</strong> {{ order.order_address.full_name }}</p>
@@ -367,7 +386,41 @@
                                     <li>{{ item.product.name }} (x{{ item.quantity }}) – ₹{{ item.subtotal }}</li>
                                 {% endfor %}
                             </ul>
+                            <hr>
+                            <table class="table table-borderless w-75 mx-auto">
+                                <tr>
+                                    <th>Subtotal:</th>
+                                    <td class="text-end">₹{{ order.subtotal|floatformat:2 }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Delivery Charge:</th>
+                                    <td class="text-end">₹{{ order.delivery_charge|floatformat:2 }}</td>
+                                </tr>
+                                {% if coupon_code %}
+                                <tr>
+                                    <th>Coupon Code:</th>
+                                    <td class="text-end">{{ coupon_code }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if coupon_discount_percent %}
+                                <tr>
+                                    <th>Coupon Discount:</th>
+                                    <td class="text-end">{{ coupon_discount_percent|floatformat:0 }}% off</td>
+                                </tr>
+                                {% endif %}
+                                {% if coupon_discount and coupon_discount > 0 %}
+                                <tr>
+                                    <th>Coupon Discount Amount:</th>
+                                    <td class="text-end text-success">- ₹{{ coupon_discount|floatformat:2 }}</td>
+                                </tr>
+                                {% endif %}
+                                <tr>
+                                    <th><strong>Total Amount:</strong></th>
+                                    <td class="text-end"><strong>₹{{ order.total|floatformat:2 }}</strong></td>
+                                </tr>
+                            </table>
                         </div>
+                        
                         <div class="modal-footer">
                             <a href="{% url 'download_invoice' order_id=order.id %}" class="btn btn-success">Download</a>
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -375,60 +428,33 @@
                     </div>
                 </div>
             </div>
-
-
-
-
         </div>
     </div>
-</div> 
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     const confirmCancelBtn = document.getElementById("confirm-cancel-btn");
     const cancelForm = document.getElementById("cancel-form");
     const modal = document.getElementById("cancelOrderModal");
-
     if (confirmCancelBtn && cancelForm && modal) {
         confirmCancelBtn.addEventListener("click", function() {
-            // Hide modal for nice UX before submitting form
             var modalInstance = bootstrap.Modal.getInstance(modal);
-            if (modalInstance) {
-                modalInstance.hide();
-            }
-            // Submit form after short delay
-            setTimeout(function() {
-                cancelForm.submit();
-            }, 350);
+            if (modalInstance) { modalInstance.hide(); }
+            setTimeout(function() { cancelForm.submit(); }, 350);
         });
     }
 });
+let refreshInterval;
+function startAutoRefresh() {
+    refreshInterval = setInterval(function () { location.reload(); }, 5000);
+}
+function stopAutoRefresh() { clearInterval(refreshInterval); }
+startAutoRefresh();
+document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('show.bs.modal', stopAutoRefresh);
+    modal.addEventListener('hide.bs.modal', startAutoRefresh);
+});
 </script>
-<script>
-    let refreshInterval;
-
-    function startAutoRefresh() {
-        refreshInterval = setInterval(function () {
-            location.reload();
-        }, 5000);
-    }
-
-    function stopAutoRefresh() {
-        clearInterval(refreshInterval);
-    }
-
-    // Start refreshing when page loads
-    startAutoRefresh();
-
-    // Stop refresh when any Bootstrap modal opens
-    document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('show.bs.modal', stopAutoRefresh);
-        modal.addEventListener('hide.bs.modal', startAutoRefresh);
-    });
-</script>
-
-
-
 {% endblock %}
