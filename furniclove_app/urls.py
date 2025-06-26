@@ -10,7 +10,7 @@ from .views import forgot_password_view, reset_password_view
 
 from .views import profile_update
 
-from .views import add_to_cart, cart_view, update_cart, remove_from_cart, place_order, order_success,user_orders,cancel_order,return_product,check_stock_updates,check_product_stock,razorpay_payment_success, razorpay_payment_failure,apply_coupon,add_address_ajax
+from .views import add_to_cart, cart_view, update_cart, remove_from_cart, order_success,user_orders,cancel_order,return_product,check_stock_updates,check_product_stock,razorpay_payment_success, razorpay_payment_failure,apply_coupon,add_address_ajax
 from django.utils.timezone import now
 
 
@@ -81,7 +81,6 @@ urlpatterns = [
 
    path('apply-coupon/', views.apply_coupon, name='apply_coupon'),
 
-   path("place-order/", place_order, name="place_order"),
    path('order-success/<str:order_id>/', order_success, name='order_success'),
    path('user-orders/', user_orders, name='user_orders'),
    path('order-details/<int:order_id>/', views.order_details, name='order_details'),
