@@ -66,7 +66,7 @@
     </div>
 
     <div class="summary">
-        <p>Total Sales: ₹{{ total_sales }}</p>
+        <p>Total Sales: Rs {{ total_sales }}</p>
         <p>Total Orders: {{ total_orders }}</p>
         <p>Total Items Sold: {{ total_items_sold }}</p>
     </div>
@@ -84,7 +84,7 @@
         <tbody>
             {% for order in orders %}
             <tr>
-                <td>{{ order.order_id }}</td>
+                <td>ORD{{ order.id|stringformat:"06d" }}</td>
                 <td>{{ order.user__username }}</td>
                 <td>{{ order.date|date:"Y-m-d H:i" }}</td>
                 <td>{{ order.total }}</td>
