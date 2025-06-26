@@ -71,6 +71,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 import weasyprint  
 
+from .refund_utils import calculate_refund_for_item
 
 # Views for different pages
 def index(request):
@@ -102,27 +103,6 @@ def forgot_password(request):
             messages.error(request, "No account found with this email.")
 
     return render(request, 'forgot_password.html')
-
-
-'''
-def reset_password(request, token):
-    reset_entry = PasswordResetToken.objects.filter(token=token).first()
-
-    if not reset_entry:
-        messages.error(request, "Invalid or expired token.")
-        return redirect('forgot_password')
-
-    if request.method == 'POST':
-        new_password = request.POST.get('password')
-        reset_entry.user.password = make_password(new_password)
-        reset_entry.user.save()
-        reset_entry.delete()  # Remove token after reset
-
-        messages.success(request, "Password has been reset successfully. Please login.")
-        return redirect('user_login')
-
-    return render(request, 'reset_password.html', {'token': token})
-'''
 
 
 def reset_password(request, token):
@@ -690,18 +670,23 @@ def cart_view(request):
         
         total_price += item.total_price 
 
-    request.session['subtotal'] = str(total_price)     
-
+    request.session['subtotal'] = str(total_price)  
+    
     if cart.coupon and cart.coupon.is_valid() and total_price >= cart.coupon.min_purchase_amount:
         discount = (total_price * cart.coupon.discount_percent) / 100
     else:
         discount = Decimal("0.00")
+        if cart.coupon:
+            cart.coupon = None
+            cart.save()
 
 
     if discount > total_price:
         discount = total_price
 
     discounted_total = total_price - discount
+
+    request.session['discount'] = str(discount)   
     request.session['final_total'] = str(discounted_total)
 
 
@@ -714,11 +699,13 @@ def cart_view(request):
     )
     return render(request, 'cart.html', {
         'cart_items': cart_items,
-        'total_price': total_price,  
+        'total_price': total_price,
+        'final_total': discounted_total,
         'out_of_stock': out_of_stock,
         'coupons': valid_coupons,
         'discount': discount,
-        'discounted_total': discounted_total, 
+        'coupon_code': cart.coupon.code if cart.coupon else None,
+        'coupon_discount_percent': cart.coupon.discount_percent if cart.coupon else None,
     })
 
 
@@ -769,40 +756,58 @@ def update_cart(request, cart_id, quantity):
     return JsonResponse({'success': False, 'message': "Invalid request."}, status=400)
 
 
-
-
 @login_required
 def checkout(request):
     user = request.user
     addresses = Address.objects.filter(user=user)
     delivery_charge = Decimal("50.00")
-
+    # Always start with zeros, never use session for these
+    subtotal = Decimal("0.00")
+    discount = Decimal("0.00")
+    final_total = Decimal("0.00")
+    total = Decimal("0.00")
+    
+    
     try:
         cart = Cart.objects.get(user=user)
         cart_items = CartItem.objects.filter(cart=cart)
+        coupon_code = cart.coupon.code if cart.coupon else None
+        coupon_discount_percent = cart.coupon.discount_percent if cart.coupon else None
 
-         # Always recalculate subtotal from cart items
-        subtotal = sum([item.subtotal() for item in cart_items])
 
-        # Your discount logic here (example: from session or recalculate)
-        discount = Decimal(request.session.get('discount', "0.00"))
-        if discount is None:
+        subtotal = sum(
+            (item.sale_price if hasattr(item, "sale_price") else (
+                item.variant.discounted_price if (item.variant and hasattr(item.variant, "discounted_price") and item.variant.discounted_price)
+                else (item.product.discounted_price if hasattr(item.product, "discounted_price") and item.product.discounted_price
+                else item.product.original_price)
+            )) * item.quantity
+            for item in cart_items
+        )
+
+        if cart.coupon:
+            coupon_code = cart.coupon.code
+            coupon_discount_percent = cart.coupon.discount_percent
+            discount = (Decimal(cart.coupon.discount_percent) / Decimal(100)) * subtotal
+        else:
+            coupon_code = None
+            coupon_discount_percent = None
             discount = Decimal("0.00")
 
+            for key in ['coupon_id', 'discount', 'final_total']:
+                request.session.pop(key, None)
+        
         final_total = subtotal - discount
-        if final_total < 0:
-            final_total = Decimal("0.00")
-
-        grand_total = final_total + delivery_charge
+        total = final_total + delivery_charge
 
     except Cart.DoesNotExist:
         cart_items = CartItem.objects.none()
         subtotal = Decimal("0.00")
         discount = Decimal("0.00")
         final_total = Decimal("0.00")
-        grand_total = Decimal("0.00")
+        total = Decimal("0.00")
+        coupon_code = None
+        coupon_discount_percent = None
         
-
     if request.method == "POST":
         selected_address_id = request.POST.get('selected_address')
         payment_method = request.POST.get('payment_method')
@@ -813,13 +818,12 @@ def checkout(request):
 
         request.session["selected_address_id"] = selected_address_id
 
-        # Handle Razorpay Payment
+        # Razorpay
         if payment_method == "Razorpay":
-            # Initialize Razorpay client and create an order
             client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
             try:
                 razorpay_order = client.order.create({
-                    "amount": int(grand_total * 100),  # Amount in paise
+                    "amount": int(total * 100),  # Amount in paise
                     "currency": "INR",
                     "payment_capture": "0"
                 })
@@ -828,21 +832,19 @@ def checkout(request):
 
                 return JsonResponse({
                     "razorpay_order_id": razorpay_order["id"],
-                    "total_amount": float(grand_total)
+                    "total_amount": float(total)
                 })
 
             except razorpay.errors.BadRequestError as e:
                 messages.error(request, f"Razorpay Error: {str(e)}")
                 return redirect('checkout')
 
-        # Handle Cash On Delivery (COD) Payment
+        # COD
         elif payment_method == "COD":
-            # Apply COD restrictions if the total amount is above ₹1000
-            if grand_total >= 1000:
+            if total >= 1000:
                 messages.error(request, "COD is available only for orders below ₹1000.")
                 return redirect("checkout")
             
-            # Create the order and update the database within a transaction
             with transaction.atomic():
                 order = Order.objects.create(
                     user=user,
@@ -853,10 +855,10 @@ def checkout(request):
                     status="Pending",
                     payment_status="Pending",
                     delivery_charge=delivery_charge,
-
+                    total=total,
+                    coupon=cart.coupon if hasattr(cart, "coupon") else None,
                 )
 
-                # Create order address entry
                 OrderAddress.objects.create(
                     order=order,
                     full_name=selected_address.full_name,
@@ -868,44 +870,45 @@ def checkout(request):
                     zipcode=selected_address.zipcode
                 )
 
-                # Create order items for each cart item
+                
                 for item in cart_items:
-                    price = item.subtotal()  
+                    # Get the per-unit sale price
+                    if hasattr(item, "sale_price"):
+                        unit_price = item.sale_price
+                    elif item.variant and hasattr(item.variant, "discounted_price") and item.variant.discounted_price:
+                        unit_price = item.variant.discounted_price
+                    elif hasattr(item.product, 'discounted_price') and item.product.discounted_price:
+                        unit_price = item.product.discounted_price
+                    else:
+                        unit_price = item.product.original_price
+
                     OrderItem.objects.create(
                         order=order,
                         product=item.product,
                         variant=item.variant,
                         quantity=item.quantity,
-                        price=price 
-                    )
+                        price=unit_price  # <--- CORRECT: per-unit price
+                    )    
 
-                # Clear the cart after placing the order
                 if cart_items.exists():
                     cart_items.delete()
                 cart.delete()
 
-                # Clear session values related to checkout
-                for key in ['checkout_subtotal', 'checkout_discount', 'checkout_final_total']:
+                # Clear session values
+                for key in ['subtotal', 'discount', 'final_total']:
                     request.session.pop(key, None)
 
             return redirect('order_success', order_id=order.id)
 
-        # Add Wallet Payment Option
+        # Wallet
         elif payment_method == "Wallet":
-            # Retrieve the user's wallet balance via UserProfile
             user_profile = user.userprofile
-            wallet_balance = 0
-            if hasattr(user_profile, 'wallet'):
-                wallet_balance = user_profile.wallet.balance
-            else:
-                wallet_balance = 0
+            wallet_balance = user_profile.wallet.balance if hasattr(user_profile, 'wallet') else 0
 
-            if wallet_balance >= grand_total:
-                # Deduct the amount from the wallet
-                user_profile.wallet.balance -= grand_total
+            if wallet_balance >= total:
+                user_profile.wallet.balance -= total
                 user_profile.wallet.save()
 
-                # Create the order with wallet payment
                 with transaction.atomic():
                     order = Order.objects.create(
                         user=user,
@@ -916,10 +919,10 @@ def checkout(request):
                         status="Pending",
                         payment_status="Paid", 
                         delivery_charge=delivery_charge,
-
+                        total=total,
+                        coupon=cart.coupon if hasattr(cart, "coupon") else None,
                     )
 
-                    # Create order address entry
                     OrderAddress.objects.create(
                         order=order,
                         full_name=selected_address.full_name,
@@ -931,24 +934,30 @@ def checkout(request):
                         zipcode=selected_address.zipcode
                     )
 
-                    # Create order items for each cart item
                     for item in cart_items:
-                        price = item.subtotal()
+                        # Get the per-unit sale price
+                        if hasattr(item, "sale_price"):
+                            unit_price = item.sale_price
+                        elif item.variant and hasattr(item.variant, "discounted_price") and item.variant.discounted_price:
+                            unit_price = item.variant.discounted_price
+                        elif hasattr(item.product, 'discounted_price') and item.product.discounted_price:
+                            unit_price = item.product.discounted_price
+                        else:
+                            unit_price = item.product.original_price
+
                         OrderItem.objects.create(
                             order=order,
                             product=item.product,
                             variant=item.variant,
                             quantity=item.quantity,
-                            price=price
-                        )
+                            price=unit_price  # <--- CORRECT: per-unit price
+                        )    
 
-                    # Clear cart after placing the order
                     if cart_items.exists():
                         cart_items.delete()
                     cart.delete()
 
-                    # Clear session values related to checkout
-                    for key in ['checkout_subtotal', 'checkout_discount', 'checkout_final_total']:
+                    for key in ['subtotal', 'discount', 'final_total']:
                         request.session.pop(key, None)
 
                 messages.success(request, "Your order was placed successfully using Wallet payment.")
@@ -962,92 +971,15 @@ def checkout(request):
         'cart_items': cart_items,
         'discount': discount,
         'final_total': final_total,  
-        'delivery_charge':delivery_charge,
+        'delivery_charge': delivery_charge,
         'razorpay_key_id': settings.RAZORPAY_KEY_ID,
-        'grand_total': grand_total,
-    })
-
-
-
-
-@login_required
-def place_order(request):
-    if request.method == "POST":
-        selected_address_id = request.POST.get("selected_address")
-        payment_method = request.POST.get("payment_method")
-
-        if not selected_address_id:
-            messages.error(request, "Please select an address.")
-            return redirect("checkout")
-
-        try:
-            selected_address = Address.objects.get(id=selected_address_id)
-        except Address.DoesNotExist:
-            messages.error(request, "Selected address does not exist.")
-            return redirect("checkout")
-
-        cart_items = CartItem.objects.filter(cart__user=request.user)
-        if not cart_items:
-            messages.error(request, "Your cart is empty.")
-            return redirect("checkout")
-
-        # Retrieve the session values for the order calculation
-        subtotal = Decimal(request.session.get('checkout_subtotal', '0.00'))
-        discount = Decimal(request.session.get('checkout_discount', '0.00'))
-        final_total = Decimal(request.session.get('checkout_final_total', '0.00'))
+        'total': total,
+        'subtotal': subtotal,
+        'coupon_code': coupon_code,
+        'coupon_discount_percent': coupon_discount_percent,
+        'cart':cart,
         
-        with transaction.atomic():
-            order = Order.objects.create(
-                user=request.user,
-                subtotal=subtotal,
-                discount=discount,
-                final_total=final_total,
-                total=final_total,
-                payment_method=payment_method,
-                status="Pending",
-                payment_status="Pending" if payment_method == "Razorpay" else "Paid"
-            )
-
-            # Create the order address entry
-            OrderAddress.objects.create(
-                order=order,
-                full_name=selected_address.full_name,
-                phone=selected_address.phone,
-                address=selected_address.address,
-                district=selected_address.district,
-                state=selected_address.state,
-                country=selected_address.country,
-                zipcode=selected_address.zipcode
-            )
-
-            # Create the order items for each cart item
-            for item in cart_items:
-                OrderItem.objects.create(
-                    order=order,
-                    product=item.product,
-                    variant=item.variant,
-                    quantity=item.quantity,
-                    price=item.total_price  # Assuming CartItem has a total price
-                )
-
-            # Clear the cart after successful order placement
-            cart_items.delete()
-            request.session.pop('cart', None)
-
-            # Clean up session variables
-            for key in ['checkout_subtotal', 'checkout_discount', 'checkout_final_total']:
-                request.session.pop(key, None)
-
-        print(f"✅ Order {order.id} created using session discount")
-
-        if payment_method == "Razorpay":
-            return redirect("razorpay_payment_page", order_id=order.id)
-
-        # If payment is COD or other methods, return to the order success page
-        return redirect('order_success', order_id=order.id)
-
-    return redirect("checkout")
-
+    })
 
 
 
@@ -1091,39 +1023,30 @@ def order_details(request, order_id):
     order_items = OrderItem.objects.filter(order=order)
     for item in order_items:
         item.subtotal = item.quantity * item.price  
-        item.return_obj = Return.objects.filter(order_item=item).first()  # attach return object
+        item.return_obj = Return.objects.filter(order_item=item).first()
 
     razorpay_payment_id = order.razorpay_payment_id if order.payment_method == 'Razorpay' else None
 
-    return render(request, 'order_details.html', {
+    # Get coupon info if attached to order
+    coupon = getattr(order, "coupon", None) if hasattr(order, "coupon") else None
+    coupon_code = coupon.code if coupon else None
+    coupon_discount_percent = coupon.discount_percent if coupon else None
+    coupon_discount = order.discount  # this is the discount amount
+
+    original_total = order.subtotal + order.delivery_charge
+
+    context = {
         'order': order,
         'order_address': order_address,
         'order_items': order_items,
-        'razorpay_payment_id': razorpay_payment_id
-    })
+        'razorpay_payment_id': razorpay_payment_id,
+        'original_total': original_total,
+        'coupon_code': coupon_code,
+        'coupon_discount_percent': coupon_discount_percent,
+        'coupon_discount': coupon_discount,
+    }
+    return render(request, 'order_details.html', context)
 
-
-'''
-@login_required
-def cancel_order(request, order_id):
-    try:
-        order = Order.objects.get(id=order_id, user=request.user)
-        
-        if order.status in ['Shipped', 'Delivered']:
-            return HttpResponse("You cannot cancel a shipped or delivered order.", status=400)
-
-        # Change order status to "Cancelled"
-        order.status = 'Cancelled'
-        
-        # Change payment status to "Failed"
-        order.payment_status = 'Failed'
-
-        order.save()
-        return redirect('user_orders')
-
-    except Order.DoesNotExist:
-        return redirect('user_orders')  
-'''
 
 
 @login_required
@@ -1161,25 +1084,34 @@ def cancel_order(request, order_id):
         return redirect('user_orders')
 
 
+
+@login_required
 def return_product(request, order_id, item_id):
     item = get_object_or_404(OrderItem, id=item_id, order_id=order_id)
+    order = item.order
 
     if request.method == 'POST':
         form = ReturnReasonForm(request.POST)
         if form.is_valid():
             reason = form.cleaned_data['reason']
-            # Create a Return object
-            Return.objects.create(
-                order_item=item,
-                reason=reason,
-                status="Requested"
-            )
-            messages.success(request, "Return request submitted.")
+
+            # FIX: Correct refund calculation
+            refund_amount = calculate_refund_for_item(order, item)
+
+            wallet, _ = Wallet.objects.get_or_create(user_profile=request.user.userprofile)
+            with transaction.atomic():
+                wallet.balance += refund_amount
+                wallet.save()
+                wallet.transactions.create(
+                    amount=refund_amount,
+                    transaction_type='Credited',
+                    description=f"Refund for returned {item.product.name} (Order {order.order_id})"
+                )
+                Return.objects.create(order_item=item, reason=reason, status="Requested")
+
+            messages.success(request, f"Return submitted. ₹{refund_amount:.2f} credited to your wallet.")
             return redirect('order_details', order_id=order_id)
-
     return redirect('order_details', order_id=order_id)
-
-
 
 
 @login_required
@@ -1220,36 +1152,62 @@ def wallet_payment(request):
             return JsonResponse({'success': False, 'message': 'Cart is empty.'})
 
         cart_items = CartItem.objects.filter(cart=cart)
-        final_total = sum(item.subtotal() for item in cart_items)
+        subtotal = sum(
+            (item.sale_price if hasattr(item, "sale_price") else (
+                item.variant.discounted_price if (item.variant and hasattr(item.variant, "discounted_price") and item.variant.discounted_price)
+                else (item.product.discounted_price if hasattr(item.product, "discounted_price") and item.product.discounted_price
+                else item.product.original_price)
+            )) * item.quantity
+            for item in cart_items
+        )
 
-        if wallet.balance < final_total:
+        if cart.coupon:
+            discount = (Decimal(cart.coupon.discount_percent) / Decimal(100)) * subtotal
+        else:
+            discount = Decimal("0.00")
+        final_total = subtotal - discount
+        delivery_charge = Decimal("50.00")
+        total = final_total + delivery_charge
+
+        if wallet.balance < total:
             return JsonResponse({'success': False, 'message': 'Not enough wallet balance.'})
 
         try:
             with transaction.atomic():
-                # Deduct wallet balance
-                wallet.balance -= final_total
+                wallet.balance -= total
                 wallet.save()
 
-                # Create order
                 order = Order.objects.create(
                     user=request.user,
-                    total=final_total,
+                    subtotal=subtotal,
+                    discount=discount,
+                    final_total=final_total,
+                    delivery_charge=delivery_charge,
+                    total=total,
                     payment_status="Paid",
-                    payment_method="Wallet"
+                    payment_method="Wallet",
+                    coupon=cart.coupon if hasattr(cart, "coupon") else None,
                 )
 
-                # Create order items
                 for item in cart_items:
+                    # Get the per-unit sale price
+                    if hasattr(item, "sale_price"):
+                        unit_price = item.sale_price
+                    elif item.variant and hasattr(item.variant, "discounted_price") and item.variant.discounted_price:
+                        unit_price = item.variant.discounted_price
+                    elif hasattr(item.product, 'discounted_price') and item.product.discounted_price:
+                        unit_price = item.product.discounted_price
+                    else:
+                        unit_price = item.product.original_price
+
                     OrderItem.objects.create(
                         order=order,
                         product=item.product,
                         variant=item.variant,
                         quantity=item.quantity,
-                        price=item.subtotal()
-                    )
+                        price=unit_price  
+                    )    
 
-                # Save address if selected
                 address_id = request.session.get("selected_address_id")
                 if address_id:
                     address = get_object_or_404(Address, id=address_id)
@@ -1264,23 +1222,19 @@ def wallet_payment(request):
                         zipcode=address.zipcode
                     )
 
-                # Log wallet transaction
                 wallet.transactions.create(
-                    amount=final_total,
+                    amount=total,
                     transaction_type='Debited'
                 )
 
-                # Clean up cart
                 cart_items.delete()
                 cart.delete()
-                request.session.pop('cart', None)
+                for key in ['subtotal', 'discount', 'final_total']:
+                    request.session.pop(key, None)
                 request.session.modified = True
 
-            # If everything succeeded, return JSON not redirect
             return JsonResponse({'success': True, 'order_id': order.id})
-
         except Exception as e:
-            # Log the exception somewhere here if you want
             return JsonResponse({'success': False, 'message': f'Payment failed: {str(e)}'})
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
@@ -1323,6 +1277,7 @@ def check_product_stock(request, product_id, variant_id=None):
     
 
 
+@login_required
 def razorpay_payment_success(request):
     payment_id = request.GET.get("payment_id")
     order_id = request.session.get("razorpay_order_id")
@@ -1335,39 +1290,63 @@ def razorpay_payment_success(request):
 
     try:
         payment = client.payment.fetch(payment_id)
-
-        if payment['status'] in ["authorized", "captured"]:  
+        if payment['status'] in ["authorized", "captured"]:
             if payment['status'] == "authorized":
-               
                 client.payment.capture(payment_id, payment['amount'])
 
-           
             cart = Cart.objects.filter(user=request.user).first()
             if cart:
                 cart_items = CartItem.objects.filter(cart=cart)
-                total_amount = sum(item.subtotal() for item in cart_items)
+                subtotal = sum(
+                    (item.sale_price if hasattr(item, "sale_price") else (
+                        item.variant.discounted_price if (item.variant and hasattr(item.variant, "discounted_price") and item.variant.discounted_price)
+                        else (item.product.discounted_price if hasattr(item.product, "discounted_price") and item.product.discounted_price
+                        else item.product.original_price)
+                    )) * item.quantity
+                    for item in cart_items
+                )
+                if cart.coupon:
+                    discount = (Decimal(cart.coupon.discount_percent) / Decimal(100)) * subtotal
+                else:
+                    discount = Decimal("0.00")
+                final_total = subtotal - discount
+                delivery_charge = Decimal("50.00")
+                total = final_total + delivery_charge
+                
 
                 with transaction.atomic():
-                    
                     order = Order.objects.create(
                         user=request.user,
-                        total=total_amount,
+                        subtotal=subtotal,
+                        discount=discount,
+                        final_total=final_total,
+                        delivery_charge=delivery_charge,
+                        total=total,
                         payment_status="Paid",
                         payment_method="Razorpay",
-                        razorpay_payment_id=payment_id  # Save payment ID
+                        razorpay_payment_id=payment_id,
+                        coupon=cart.coupon if hasattr(cart, "coupon") else None,
                     )
 
-                   
                     for item in cart_items:
+                        # Get the per-unit sale price
+                        if hasattr(item, "sale_price"):
+                            unit_price = item.sale_price
+                        elif item.variant and hasattr(item.variant, "discounted_price") and item.variant.discounted_price:
+                            unit_price = item.variant.discounted_price
+                        elif hasattr(item.product, 'discounted_price') and item.product.discounted_price:
+                            unit_price = item.product.discounted_price
+                        else:
+                            unit_price = item.product.original_price
+
                         OrderItem.objects.create(
                             order=order,
                             product=item.product,
                             variant=item.variant,
                             quantity=item.quantity,
-                            price=item.subtotal()
+                            price=unit_price  # CORRECT: per-unit price!
                         )
 
-                   
                     address_id = request.session.get("selected_address_id")
                     if address_id:
                         address = get_object_or_404(Address, id=address_id)
@@ -1382,29 +1361,27 @@ def razorpay_payment_success(request):
                             zipcode=address.zipcode
                         )
 
-                    apply_coupon_usage(request)
+                    if hasattr(cart, 'coupon') and cart.coupon:
+                        apply_coupon_usage(request)
 
                     cart_items.delete()
                     cart.delete()
-                    request.session.pop('cart', None)
+                    for key in ['subtotal', 'discount', 'final_total']:
+                        request.session.pop(key, None)
                     request.session.modified = True
 
                     messages.success(request, "Payment captured successfully! Your order has been placed.")
                     return redirect('order_success', order_id=order.id)
-
             else:
                 messages.error(request, "Cart is empty. Please add items before payment.")
                 return redirect('cart_view')
-
         else:
-            
             messages.error(request, "Payment failed. Please try again.")
             return redirect('razorpay_payment_failure')
 
     except razorpay.errors.BadRequestError as e:
         messages.error(request, f"Razorpay Error: {str(e)}")
         return redirect('checkout')
-
     except Exception as e:
         messages.error(request, f"Error processing payment: {str(e)}")
         return redirect('cart_view')
@@ -1428,16 +1405,28 @@ def razorpay_payment_failure(request):
 def apply_coupon(request):
     if request.method == "POST":
         coupon_code = request.POST.get("coupon", "").strip().upper()
-
-        if not coupon_code:
-            return JsonResponse({'success': False, 'error': 'Please enter a coupon code'})
-
         cart = Cart.objects.get(user=request.user)
+
+        # User submits empty coupon field: clear coupon!
+        if not coupon_code:
+            cart.coupon = None
+            cart.save()
+            subtotal = Decimal(sum(item.subtotal() for item in cart.cart_items.all()))
+            request.session['final_total'] = str(subtotal)
+            request.session['discount'] = str(Decimal("0.00"))
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'final_total': f"Rs.{subtotal:.2f}"
+                })
+            return redirect('cart_view')
 
         try:
             coupon = Coupon.objects.get(code=coupon_code)
 
             if not coupon.is_valid():
+                cart.coupon = None  # Ensure coupon is cleared for invalid/expired
+                cart.save()
                 return JsonResponse({'success': False, 'error': 'Coupon expired, inactive, or exceeded usage'})
 
             if coupon.discount_percent <= 0:
@@ -1446,6 +1435,9 @@ def apply_coupon(request):
             subtotal = Decimal(sum(item.subtotal() for item in cart.cart_items.all()))
             if subtotal < coupon.min_purchase_amount:
                 return JsonResponse({'success': False, 'error': f'Minimum purchase amount is Rs.{coupon.min_purchase_amount}'})
+            
+            cart.coupon = coupon
+            cart.save()
 
             discount_amount = (coupon.discount_percent / Decimal(100)) * subtotal
             final_total = subtotal - discount_amount
@@ -1463,10 +1455,11 @@ def apply_coupon(request):
             return redirect('cart_view')
 
         except Coupon.DoesNotExist:
+            cart.coupon = None  # Clear coupon if invalid code
+            cart.save()
             return JsonResponse({'success': False, 'error': 'Invalid coupon code'})
 
     return redirect('cart_view')
-
 
 
 def apply_coupon_usage(request):
@@ -1558,25 +1551,32 @@ def submit_review(request, product_id):
 
 
 
-
 def download_invoice(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
     order_items = OrderItem.objects.filter(order=order)
-    
+    order_address = OrderAddress.objects.filter(order=order).first()
+
+    coupon = getattr(order, "coupon", None)
+    coupon_code = coupon.code if coupon else None
+    coupon_discount_percent = coupon.discount_percent if coupon else None
+    coupon_discount = order.discount if hasattr(order, 'discount') else None
+
     html_string = render_to_string('invoice_template.html', {
         'order': order,
         'order_items': order_items,
+        'order_address': order_address,
         'user': request.user,
+        'coupon_code': coupon_code,
+        'coupon_discount_percent': coupon_discount_percent,
+        'coupon_discount': coupon_discount,
     })
-   
-    
+
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="invoice_{order.order_id}.pdf"'
-    
-    weasyprint.HTML(string=html_string).write_pdf(response)
-    
-    return response
 
+    weasyprint.HTML(string=html_string).write_pdf(response)
+
+    return response
 
 
 def custom_404_view(request, exception):

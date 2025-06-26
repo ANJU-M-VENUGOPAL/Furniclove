@@ -10,6 +10,7 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from .models import Product, ColorVariant,Category
 from .forms import ProductForm, ColorVariantForm
+from django.core.paginator import Paginator
 
 from furniclove_app.models import Order, OrderItem, OrderAddress, Wallet, Transaction
 from admin_panel.models import Product,ColorVariant,Category, Coupon, Return
@@ -43,7 +44,9 @@ from django.template.loader import get_template
 from xhtml2pdf import pisa
 import io
 
+import logging
 
+'''
 @never_cache
 def admin_login(request):
     if request.method == 'POST':
@@ -66,7 +69,34 @@ def admin_login(request):
             messages.error(request, "Invalid username or password. Please try again.")
 
     return render(request, 'admin_login.html')
+'''
 
+
+logger = logging.getLogger(__name__)
+
+@never_cache
+def admin_login(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+        
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None and user.is_superuser:
+            request.session.flush()  
+            login(request, user)
+            
+            request.session['is_admin'] = True  
+            request.session['user_id'] = user.id  
+            
+            # Use logger instead of print
+            logger.info(f"Admin Login Session Data: {dict(request.session.items())}")  
+            
+            return redirect('admin_home')
+        else:
+            messages.error(request, "Invalid username or password. Please try again.")
+
+    return render(request, 'admin_login.html')
 
 
 @login_required
@@ -182,9 +212,14 @@ def product_management(request):
             product.thumbnail_4,
         ]
 
+    paginator = Paginator(products, 10)  # 10 products per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     context = {
-        'products': products
+        'page_obj': page_obj,  # paginated products
     }
+
     return render(request, 'product_management.html', context)
 
 
@@ -634,7 +669,6 @@ def coupon_management(request):
     return render(request, 'coupon_management.html', {'coupons': coupons})
 
 
-
 def add_coupon(request):
     if request.method == 'POST':
         try:
@@ -673,8 +707,10 @@ def add_coupon(request):
             messages.success(request, "Coupon added successfully.")
             return redirect('coupon_management')
 
-        except (InvalidOperation, ValueError, ValidationError) as e:
-            messages.error(request, f"Error: {str(e)}")
+        except ValidationError as e:
+            messages.error(request, e.messages[0])
+        except (InvalidOperation, ValueError) as e:
+            messages.error(request, str(e))
 
     return render(request, 'add_coupon.html')
 
@@ -719,21 +755,21 @@ def edit_coupon(request, coupon_id):
             messages.success(request, "Coupon updated successfully.")
             return redirect('coupon_management')
 
-        except (InvalidOperation, ValueError, ValidationError) as e:
-            messages.error(request, f"Error: {str(e)}")
+        except ValidationError as e:
+            messages.error(request, e.messages[0])
+        except (InvalidOperation, ValueError) as e:
+            messages.error(request, str(e))
 
     return render(request, 'edit_coupon.html', {'coupon': coupon})
 
 
 
-# Delete coupon
 def delete_coupon(request, coupon_id):
-    coupon = get_object_or_404(Coupon, id=coupon_id)
-    coupon.delete()
-    messages.success(request, "Coupon deleted successfully.")
+    if request.method == 'POST':
+        coupon = get_object_or_404(Coupon, id=coupon_id)
+        coupon.delete()
+        messages.success(request, "Coupon deleted successfully.")
     return redirect('coupon_management')
-
-
 
 
 
@@ -758,7 +794,7 @@ def sales_report(request):
 
     total_items_sold = OrderItem.objects.filter(order__in=orders).aggregate(total_qty=Sum('quantity'))['total_qty'] or 0
 
-    order_list = orders.order_by('-date').values('order_id', 'user__username', 'date', 'total', 'status')
+    order_list = orders.order_by('-date').values('id', 'user__username', 'date', 'total', 'status')
 
     context = {
         'total_sales': total_sales,
@@ -795,7 +831,7 @@ def download_sales_pdf(request):
     total_orders = orders.count()
     total_items_sold = OrderItem.objects.filter(order__in=orders).aggregate(total_qty=Sum('quantity'))['total_qty'] or 0
 
-    order_list = orders.order_by('-date').values('order_id', 'user__username', 'date', 'total', 'status')
+    order_list = orders.order_by('-date').values('id', 'user__username', 'date', 'total', 'status')
 
 
 
@@ -835,7 +871,7 @@ def download_sales_excel(request):
     elif year_filter:
         orders = orders.filter(date__year=year_filter)
 
-    order_list = orders.order_by('-date').values('order_id', 'user__username', 'date', 'total', 'status')
+    order_list = orders.order_by('-date').values('id', 'user__username', 'date', 'total', 'status')
 
     df = pd.DataFrame(order_list)
     df['date'] = df['date'].dt.strftime('%Y-%m-%d %H:%M')
