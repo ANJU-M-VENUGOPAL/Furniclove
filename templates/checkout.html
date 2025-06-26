@@ -204,6 +204,7 @@
                             <button type="button" id="place-order-btn" class="btn btn-success w-100 shadow">
                                 <i class="bi bi-cart-check"></i> Place Order
                             </button>
+                            <p id="stock-warning" style="color: red; display: none;">Some items are out of stock. Remove them to proceed.</p>
                         </div>
                     </form>
                 </div>
@@ -258,15 +259,22 @@
                         </div>
 
                         <div class="text-end mt-3">
-                            {% if discount > 0 %}
-                                <p class="text-success">Discount: <strong>Rs. {{ discount|floatformat:2 }}</strong></p>
-                                <p class="text-dark">Delivery Charge: <strong>Rs. {{ delivery_charge|floatformat:2 }}</strong></p>
-                                <h5 class="fw-bold text-primary">Subtotal: Rs. {{ final_total|floatformat:2 }}</h5>
-                            {% else %}
-                                <p class="text-dark">Delivery Charge: <strong>Rs. {{ delivery_charge|floatformat:2 }}</strong></p>
-                                <h5 class="fw-bold text-primary">Grand Total: Rs. {{ grand_total|floatformat:2 }}</h5>
+                            <p class="text-dark mb-1">Subtotal: <strong>Rs. {{ subtotal|floatformat:2 }}</strong></p>
+                            
+                           {% if discount > 0 and coupon_discount_percent %}
+                                <p class="text-success mb-1 mb-0">
+                                    Coupon Discount: <strong>Rs. {{ discount|floatformat:2 }}</strong><br>
+                                    {% if coupon_discount_percent %}
+                                        <span style="font-size: 0.95em; color: #198754; margin-left: 1.7em;">{{ coupon_discount_percent|floatformat:0 }}% off</span>
+                                    {% endif %}
+                                </p>
                             {% endif %}
+                            <p class="text-dark mb-1">Total: <strong>Rs. {{ final_total|floatformat:2 }}</strong></p>
+                            <p class="text-dark mb-1">Delivery Charge: <strong>Rs. {{ delivery_charge|floatformat:2 }}</strong></p>
+                            <hr>
+                            <h5 class="fw-bold text-primary">Grand Total: Rs. {{ total|floatformat:2 }}</h5>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -483,5 +491,32 @@ $(document).ready(function() {
         }
     });
 });
+
+function checkCheckoutStock() {
+    fetch("{% url 'check_stock_updates' %}")
+    .then(response => response.json())
+    .then(data => {
+        let outOfStock = false;
+        data.items.forEach(item => {
+            if(item.stock <= 0) {
+                outOfStock = true;
+            }
+        });
+        let placeOrderBtn = document.getElementById("place-order-btn");
+        let stockWarning = document.getElementById("stock-warning");
+        if (outOfStock) {
+            placeOrderBtn.disabled = true;
+            stockWarning.style.display = "block";
+        } else {
+            placeOrderBtn.disabled = false;
+            stockWarning.style.display = "none";
+        }
+    })
+    .catch(error => {
+        console.error("Error checking stock:", error);
+    });
+}
+setInterval(checkCheckoutStock, 2000);
+document.addEventListener('DOMContentLoaded', checkCheckoutStock);
 </script>
 {% endblock %}

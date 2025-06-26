@@ -94,6 +94,43 @@
     .coupon-copy-btn:hover { background: #007bff; color: #fff; }
 </style>
 
+<!-- Remove from Cart Toast Confirmation -->
+<div id="removeCartToast" class="toast show align-items-center"
+     role="alert" aria-live="assertive" aria-atomic="true"
+     style="
+        position: fixed;
+        top: 70px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1200;
+        min-width: 370px;
+        max-width: 98vw;
+        box-shadow: 0 6px 32px rgba(0,0,0,0.17), 0 1.5px 5px rgba(0,0,0,0.13);
+        border-radius: 18px;
+        background: #fff;
+        border: 1.5px solid #ffd6d6;
+        display: none;
+        padding: 0;
+     ">
+  <div class="d-flex flex-column p-3">
+    <div class="d-flex align-items-center mb-2">
+      <i class="fa-solid fa-trash-can me-2 text-danger fs-4"></i>
+      <span style="font-size:1.09rem;">
+        Remove <strong id="removeCartProductName" style="font-weight:600"></strong> from cart?
+      </span>
+      <button type="button" class="btn-close ms-auto" onclick="hideRemoveCartToast()" aria-label="Close"></button>
+    </div>
+    <div class="d-flex justify-content-end gap-3 pt-2">
+      <button type="button" class="btn btn-outline-secondary px-4 py-2" onclick="hideRemoveCartToast()">
+        Cancel
+      </button>
+      <button type="button" class="btn btn-danger px-4 py-2" id="removeCartYesBtn">
+        <i class="fa-solid fa-trash-can me-1"></i> Remove
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Beautiful alert for messages -->
 <div id="custom-alert" class="alert d-flex align-items-center" role="alert">
     <span id="custom-alert-icon" class="me-2"></span>
@@ -187,7 +224,12 @@
                         {% endif %}
                     </td>
                     <td>
-                        <a href="{% url 'remove_from_cart' item.id %}" class="btn btn-danger">Remove</a>
+                        <button type="button"
+                                class="btn btn-danger btn-remove-from-cart"
+                                data-item-id="{{ item.id }}"
+                                data-product-name="{{ item.product.name }}">
+                            Remove
+                        </button>
                     </td>
                 </tr>
                 {% endfor %}
@@ -215,12 +257,28 @@
                                         <button type="submit" class="btn btn-success rounded-end">Apply</button>
                                     </div>
                                 </form>
+                                {% if coupon_code %}
+                                    <form id="remove-coupon-form" method="POST" action="{% url 'apply_coupon' %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="coupon" value="">
+                                        <button type="submit" class="btn btn-danger ms-2">Remove Coupon</button>
+                                    </form>
+                                    <span class="ms-2 text-success">Applied: <strong>{{ coupon_code }}</strong> ({{ coupon_discount_percent }}% off)</span>
+                                {% endif %}
+                            </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <p><strong>Final Total:</strong> <span id="final-total"><strong>Rs.{{ final_total|floatformat:2 }}</strong></span></p>
+            <p>
+            <strong>Final Total:</strong>
+            <span id="final-total">
+                <strong>
+                Rs.{% if final_total %}{{ final_total|floatformat:2 }}{% else %}{{ total_price|floatformat:2 }}{% endif %}
+                </strong>
+            </span>
+            </p>
             <button id="checkout-btn" class="btn btn-success" onclick="goToCheckout()">Proceed to Checkout</button>
             <p id="stock-warning" style="color: red; display: none;">Some items are out of stock. Remove them to proceed.</p>
         </div>
@@ -450,5 +508,32 @@ function fetchStockUpdates() {
     .catch(error => console.error("Error fetching stock updates:", error));
 }
 setInterval(fetchStockUpdates, 2000);
+
+</script>
+<script>
+let cartItemToRemoveId = null;
+
+// Show toast when clicking Remove
+document.querySelectorAll('.btn-remove-from-cart').forEach(btn => {
+  btn.addEventListener('click', function() {
+    cartItemToRemoveId = this.getAttribute('data-item-id');
+    document.getElementById('removeCartProductName').textContent = this.getAttribute('data-product-name');
+    let toastEl = document.getElementById('removeCartToast');
+    toastEl.style.display = 'block';
+    setTimeout(() => toastEl.classList.add('show'), 10);
+  });
+});
+
+function hideRemoveCartToast() {
+  let toastEl = document.getElementById('removeCartToast');
+  toastEl.classList.remove('show');
+  setTimeout(() => { toastEl.style.display = 'none'; }, 300);
+}
+
+document.getElementById('removeCartYesBtn').onclick = function() {
+  if (cartItemToRemoveId) {
+    window.location.href = `/remove/${cartItemToRemoveId}/`;
+  }
+};
 </script>
 {% endblock %}
