@@ -2,6 +2,34 @@
 {% block title %}Coupon Management{% endblock %}
 
 {% block content %}
+<style>
+  .pagination {
+        text-align: center;
+        margin: 30px 0;
+    }
+
+    .pagination a {
+        margin: 0 5px;
+        padding: 10px 15px;
+        text-decoration: none;
+        color: #0077b6;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .pagination a.active {
+        background-color: #0077b6;
+        color: white;
+    }
+
+    .pagination a:hover {
+        background-color: #005f8a;
+        color: white;
+    }
+</style>
+
 {% if messages %}
   <div class="container d-flex justify-content-center mt-4">
     <div style="max-width: 400px; width: 100%;">
@@ -46,8 +74,8 @@
                 </tr>
             </thead>
             <tbody>
-                {% if coupons %}
-                    {% for coupon in coupons %}
+                {% if page_obj %}
+                    {% for coupon in page_obj %}
                         <tr>
                             <td>{{ coupon.code }}</td>
                             <td>{{ coupon.discount_percent }}</td>  <!-- ✅ Matches the field name -->
@@ -58,10 +86,10 @@
                             <td>{{ coupon.active }}</td>
                             <td>  <!-- ✅ Edit/Delete buttons aligned properly -->
                                 <a href="{% url 'edit_coupon' coupon.id %}" class="btn btn-warning btn-sm">Edit</a>
-                                <button type="button" class="btn btn-danger btn-sm delete-btn"
-        data-coupon-id="{{ coupon.id }}" data-coupon-code="{{ coupon.code }}">
-  Delete
-</button>
+                                <form action="{% url 'delete_coupon' coupon.id %}" method="post" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                </form>
                             </td>
                         </tr>
                     {% endfor %}
@@ -88,6 +116,21 @@
     <button id="deleteNoBtn" class="btn btn-sm btn-secondary">Cancel</button>
   </div>
 </div>
+</div>
+<div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+        {% endif %}
+
+        {% for page in page_obj.paginator.page_range %}
+            <a href="?page={{ page }}" {% if page == page_obj.number %}class="active"{% endif %}>
+                {{ page }}
+            </a>
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">Next</a>
+        {% endif %}
 </div>
 
 <script>

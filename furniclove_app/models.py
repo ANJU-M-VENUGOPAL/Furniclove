@@ -114,16 +114,18 @@ class Address(models.Model):
 class Order(models.Model):
     STATUS_CHOICES = [
         ('Pending', 'Pending'),
-        ('Shipped', 'Shipped'),
         ('Delivered', 'Delivered'),
+        ('Shipped', 'Shipped'),
         ('Cancelled', 'Cancelled'),
         ('Failed', 'Failed'),
+        ('Returned', 'Returned'),
     ]
     
     PAYMENT_STATUS_CHOICES = [
         ('Pending', 'Pending'),
         ('Paid', 'Paid'),
         ('Failed', 'Failed'),
+        ('Refunded', 'Refunded'),
     ]
 
     PAYMENT_METHOD_CHOICES = [

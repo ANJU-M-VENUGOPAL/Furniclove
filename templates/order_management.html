@@ -67,8 +67,40 @@
         border-radius: 12px;
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
     }
-
+    
+    .badge.status-badge, .badge.payment-badge {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 50rem;
+    }
    
+    .pagination {
+        text-align: center;
+        margin: 30px 0;
+    }
+
+    .pagination a {
+        margin: 0 5px;
+        padding: 10px 15px;
+        text-decoration: none;
+        color: #0077b6;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .pagination a.active {
+        background-color: #0077b6;
+        color: white;
+    }
+
+    .pagination a:hover {
+        background-color: #005f8a;
+        color: white;
+    }
+
 </style>
 
     <div class="container">
@@ -90,21 +122,25 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for order in orders %}
-                            <tr class="table-light shadow-sm">
-                                <td class="fw-bold text-primary">#{{ order.order_id }}</td>
-                                <td class="fw-semibold">{{ order.user.username }}</td>
-                                <td class="text-muted">{{ order.date|date:"M d, Y, h:i A" }}</td>
+                    {% for order in page_obj %}
+                        <tr class="table-light shadow-sm">
+                            <td class="fw-bold text-primary">#{{ order.order_id }}</td>
+                            <td class="fw-semibold">{{ order.user.username }}</td>
+                            <td class="text-muted">{{ order.date|date:"M d, Y, h:i A" }}</td>
 
-                                <!-- Order Status -->
-                                <td>
+                            <!-- Order Status -->
+                            <td>
+                                {% if order.status == 'Cancelled' or order.status == 'Returned' %}
+                                    <span class="badge bg-danger text-white status-badge">
+                                        {{ order.get_status_display }}
+                                    </span>
+                                {% else %}
                                     <form method="POST" action="{% url 'update_order_status' order.id %}">
                                         {% csrf_token %}
                                         <select name="status" class="form-select form-select-sm rounded-pill border-0 px-3
                                             {% if order.status == 'Pending' %} bg-warning text-dark
                                             {% elif order.status == 'Shipped' %} bg-primary text-white
                                             {% elif order.status == 'Delivered' %} bg-success text-white
-                                            {% elif order.status == 'Cancelled' %} bg-danger text-white
                                             {% endif %}"
                                             onchange="this.form.submit()">
                                             {% for status, label in order.STATUS_CHOICES %}
@@ -114,18 +150,25 @@
                                             {% endfor %}
                                         </select>
                                     </form>
-                                </td>
+                                {% endif %}
+                            </td>
 
-                                <td class="fw-bold text-success fs-5">₹{{ order.total }}</td>
+                            <td class="fw-bold text-success fs-5">₹{{ order.total }}</td>
 
-                                <!-- Payment Status -->
-                                <td>
+                            <!-- Payment Status -->
+                            <td>
+                                {% if order.status == 'Cancelled' or order.status == 'Returned' %}
+                                    <span class="badge bg-secondary text-white payment-badge">
+                                        {{ order.get_payment_status_display }}
+                                    </span>
+                                {% else %}
                                     <form method="POST" action="{% url 'update_payment_status' order.id %}">
                                         {% csrf_token %}
                                         <select name="payment_status" class="form-select form-select-sm rounded-pill border-0 px-3
                                             {% if order.payment_status == 'Pending' %} bg-warning text-dark
                                             {% elif order.payment_status == 'Paid' %} bg-success text-white
                                             {% elif order.payment_status == 'Failed' %} bg-danger text-white
+                                            {% elif order.payment_status == 'Refunded' %} bg-info text-white
                                             {% endif %}"
                                             onchange="this.form.submit()">
                                             {% for status, label in order.PAYMENT_STATUS_CHOICES %}
@@ -135,31 +178,46 @@
                                             {% endfor %}
                                         </select>
                                     </form>
-                                </td>
+                                {% endif %}
+                            </td>
 
-                                <td class="fw-semibold">{{ order.payment_method }}</td>
+                            <td class="fw-semibold">{{ order.payment_method }}</td>
 
-                                <!-- Actions -->
-                                <td>
-                                    <a href="{% url 'admin_order_details' order.id %}" class="btn btn-info btn-sm rounded-pill px-3 shadow-sm">
-                                        View
-                                    </a>
-                                </td>
-                            </tr>
-                        {% empty %}
-                            <tr>
-                                <td colspan="8" class="text-center text-muted fw-semibold py-4">
-                                     No orders found.
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                            <!-- Actions -->
+                            <td>
+                                <a href="{% url 'admin_order_details' order.id %}" class="btn btn-info btn-sm rounded-pill px-3 shadow-sm">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted fw-semibold py-4">
+                                 No orders found.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
+</div>
+<div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+        {% endif %}
 
-    
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">    
+        {% for page in page_obj.paginator.page_range %}
+            <a href="?page={{ page }}" {% if page == page_obj.number %}class="active"{% endif %}>
+                {{ page }}
+            </a>
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">Next</a>
+        {% endif %}
+</div>
+
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 
 {% endblock %}

@@ -92,6 +92,31 @@
         background: linear-gradient(130deg, #aadeee, #4eadb4);
         margin-top: 200px;
     }
+     .pagination {
+        text-align: center;
+        margin: 30px 0;
+    }
+
+    .pagination a {
+        margin: 0 5px;
+        padding: 10px 15px;
+        text-decoration: none;
+        color: #0077b6;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .pagination a.active {
+        background-color: #0077b6;
+        color: white;
+    }
+
+    .pagination a:hover {
+        background-color: #005f8a;
+        color: white;
+    }
 </style>
 
 <div class="breadcrumbs">
@@ -140,7 +165,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for transaction in transactions %}
+                    {% for transaction in page_obj %}
                         <tr>
                             <td>{{ transaction.created_at|localtime|date:"Y-m-d H:i" }}</td>
                             <td>₹ {{ transaction.amount|floatformat:2 }}</td>
@@ -159,36 +184,24 @@
                     {% endfor %}
                 </tbody>
             </table>
+            <div class="pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                {% endif %}
 
-            <!-- Pagination -->
-            {% if transactions.has_other_pages %}
-                <nav aria-label="Page navigation">
-                    <ul class="pagination justify-content-center">
-                        {% if transactions.has_previous %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ transactions.previous_page_number }}&date={{ request.GET.date }}&amount={{ request.GET.amount }}">Previous</a>
-                            </li>
-                        {% endif %}
+                {% for page in page_obj.paginator.page_range %}
+                    <a href="?page={{ page }}" {% if page == page_obj.number %}class="active"{% endif %}>
+                        {{ page }}
+                    </a>
+                {% endfor %}
 
-                        {% for i in transactions.paginator.page_range %}
-                            {% if transactions.number == i %}
-                                <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
-                            {% else %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ i }}&date={{ request.GET.date }}&amount={{ request.GET.amount }}">{{ i }}</a>
-                                </li>
-                            {% endif %}
-                        {% endfor %}
-
-                        {% if transactions.has_next %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ transactions.next_page_number }}&date={{ request.GET.date }}&amount={{ request.GET.amount }}">Next</a>
-                            </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-            {% endif %}
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}">Next</a>
+                {% endif %}
+            </div>
+    
         </div>
-    </div>
+    </div>   
+     
 </div>
 {% endblock %}

@@ -73,6 +73,7 @@ import weasyprint
 
 from .refund_utils import calculate_refund_for_item
 
+
 # Views for different pages
 def index(request):
     return render(request, 'index.html')
@@ -800,6 +801,7 @@ def checkout(request):
         total = final_total + delivery_charge
 
     except Cart.DoesNotExist:
+        cart = None
         cart_items = CartItem.objects.none()
         subtotal = Decimal("0.00")
         discount = Decimal("0.00")
@@ -825,7 +827,7 @@ def checkout(request):
                 razorpay_order = client.order.create({
                     "amount": int(total * 100),  # Amount in paise
                     "currency": "INR",
-                    "payment_capture": "0"
+                    "payment_capture": "1"
                 })
 
                 request.session["razorpay_order_id"] = razorpay_order["id"]
@@ -1007,11 +1009,18 @@ def order_success(request, order_id):
         return HttpResponse("Order not found", status=404)
 
 
+#order details
 @login_required
 def user_orders(request):
     orders = Order.objects.filter(user=request.user).order_by('-date')
-    return render(request, 'user_orders.html', {'orders': orders})
- 
+
+    # Paginate orders
+    paginator = Paginator(orders, 10)  
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'user_orders.html', {'page_obj': page_obj})
+
 
 
 @login_required
@@ -1095,23 +1104,14 @@ def return_product(request, order_id, item_id):
         if form.is_valid():
             reason = form.cleaned_data['reason']
 
-            # FIX: Correct refund calculation
-            refund_amount = calculate_refund_for_item(order, item)
+            # Only create Return object, do NOT credit wallet here
+            Return.objects.create(order_item=item, reason=reason, status="Requested")
 
-            wallet, _ = Wallet.objects.get_or_create(user_profile=request.user.userprofile)
-            with transaction.atomic():
-                wallet.balance += refund_amount
-                wallet.save()
-                wallet.transactions.create(
-                    amount=refund_amount,
-                    transaction_type='Credited',
-                    description=f"Refund for returned {item.product.name} (Order {order.order_id})"
-                )
-                Return.objects.create(order_item=item, reason=reason, status="Requested")
-
-            messages.success(request, f"Return submitted. ₹{refund_amount:.2f} credited to your wallet.")
+            messages.success(request, "Return request submitted. Awaiting admin approval.")
             return redirect('order_details', order_id=order_id)
     return redirect('order_details', order_id=order_id)
+
+
 
 
 @login_required
@@ -1135,7 +1135,7 @@ def wallet(request):
 
     context = {
         'balance': wallet.balance,
-        'transactions': page_obj
+        'page_obj': page_obj,
     }
     return render(request, 'wallet.html', context)
 

@@ -35,6 +35,25 @@
         margin-right: 10px;
         cursor: pointer;
     }
+    .pagination a {
+    margin: 0 5px;
+    padding: 8px 12px;
+    text-decoration: none;
+    color: #007bff;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.pagination a.active {
+    background-color: #007bff;
+    color: white;
+}
+
+.pagination a:hover {
+    background-color: #0056b3;
+    color: white;
+}
+
 </style>
 </head>
 <body>
@@ -82,7 +101,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for order in orders %}
+            {% for order in page_obj %}
             <tr>
                 <td>ORD{{ order.id|stringformat:"06d" }}</td>
                 <td>{{ order.user__username }}</td>
@@ -97,5 +116,22 @@
             {% endfor %}
         </tbody>
     </table>
+<div class="pagination" style="text-align: center; margin-top: 20px;">
+    {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if date_filter %}&date={{ date_filter }}{% endif %}{% if month_filter %}&month={{ month_filter }}{% endif %}{% if year_filter %}&year={{ year_filter }}{% endif %}">Previous</a>
+    {% endif %}
+
+    {% for page in page_obj.paginator.page_range %}
+        <a href="?page={{ page }}{% if date_filter %}&date={{ date_filter }}{% endif %}{% if month_filter %}&month={{ month_filter }}{% endif %}{% if year_filter %}&year={{ year_filter }}{% endif %}"
+           {% if page == page_obj.number %}class="active"{% endif %}>
+            {{ page }}
+        </a>
+    {% endfor %}
+
+    {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if date_filter %}&date={{ date_filter }}{% endif %}{% if month_filter %}&month={{ month_filter }}{% endif %}{% if year_filter %}&year={{ year_filter }}{% endif %}">Next</a>
+    {% endif %}
+</div>
+
 
 {% endblock %}

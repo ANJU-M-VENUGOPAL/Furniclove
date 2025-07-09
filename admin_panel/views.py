@@ -44,32 +44,9 @@ from django.template.loader import get_template
 from xhtml2pdf import pisa
 import io
 
+from furniclove_app.refund_utils import calculate_refund_for_item 
+
 import logging
-
-'''
-@never_cache
-def admin_login(request):
-    if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-        
-        user = authenticate(request, username=username, password=password)
-        
-        if user is not None and user.is_superuser:
-            request.session.flush()  
-            login(request, user)
-            
-            request.session['is_admin'] = True  
-            request.session['user_id'] = user.id  
-            
-            print("Admin Login Session Data:", request.session.items())  
-            
-            return redirect('admin_home')
-        else:
-            messages.error(request, "Invalid username or password. Please try again.")
-
-    return render(request, 'admin_login.html')
-'''
 
 
 logger = logging.getLogger(__name__)
@@ -161,8 +138,18 @@ def user_management(request):
     if not request.user.is_superuser:
         messages.error(request, 'You do not have permission to access this page.')
         return redirect('home')  
-    users = User.objects.exclude(is_superuser=True) 
-    return render(request, 'user_management.html', {'users': users})
+
+    users = User.objects.exclude(is_superuser=True)
+
+    paginator = Paginator(users, 10)  # 10 users per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+    } 
+    return render(request, 'user_management.html', context)
+
 
 
 # Block a user (deactivate)
@@ -451,8 +438,11 @@ def category_management(request):
         return redirect('admin_home')
 
     categories = Category.objects.all()
-    return render(request, 'category_management.html', {'categories': categories})
+    paginator = Paginator(categories, 10)  # 10 categories per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
+    return render(request, 'category_management.html', {'page_obj': page_obj})
 
 
 
@@ -519,57 +509,61 @@ def admin_logout(request):
     return redirect('admin_login')  
 
 
+#order management
 @login_required
 def order_management(request):
-    orders = Order.objects.all().order_by('-date')  
-    return render(request, 'order_management.html', {'orders': orders})
+    orders = Order.objects.all().order_by('-date')
+    paginator = Paginator(orders, 10)  # Show 10 orders per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'order_management.html', {'page_obj': page_obj})
 
 
+# Only the changed section for update_order_status
 
 @login_required
 def update_order_status(request, order_id):
     order = get_object_or_404(Order, id=order_id)
 
+    # Prevent status change if already Cancelled or Returned
+    if order.status in ["Cancelled", "Returned"]:
+        messages.error(request, "Cannot change status for cancelled or returned orders.")
+        return redirect('order_management')
+
     if request.method == "POST":
         new_status = request.POST.get("status")
         order.status = new_status
 
-        
         if new_status == "Delivered":
             for item in order.items.all():
-                if item.variant:  
+                if item.variant:
                     if item.variant.stock >= item.quantity:
                         item.variant.stock -= item.quantity
                         item.variant.save()
-                else:  
+                else:
                     if item.product.stock >= item.quantity:
                         item.product.stock -= item.quantity
                         item.product.save()
-
-            
             order.payment_status = "Paid"
-        
+
         elif new_status in ["Pending", "Shipped"]:
-           
             order.payment_status = "Pending"
 
         elif new_status == "Cancelled":
             if order.payment_status == "Paid":
                 user_profile = order.user.userprofile
                 wallet, _ = Wallet.objects.get_or_create(user_profile=user_profile)
-
                 refund_amount = sum(item.price * item.quantity for item in order.items.all())
-
                 wallet.balance += refund_amount
                 wallet.save()
-
                 Transaction.objects.create(
                     wallet=wallet,
                     amount=refund_amount,
                     transaction_type='Credited'
                 )
-
-            order.payment_status = "Failed"
+            # Set payment_status to "Refunded" NOT "Failed"
+            order.payment_status = "Refunded"
 
             for item in order.items.all():
                 if item.variant:
@@ -578,10 +572,8 @@ def update_order_status(request, order_id):
                 else:
                     item.product.stock += item.quantity
                     item.product.save()
-    order.save()
-    
+        order.save()
     return redirect('order_management')
-
 
 
 @login_required
@@ -625,14 +617,17 @@ def order_details_admin(request, order_id):
 def process_return(request, return_id):
     return_obj = get_object_or_404(Return, id=return_id)
     new_status = request.POST.get("new_status")
-    current_status = return_obj.status  # store the current status
+    current_status = return_obj.status
 
     if new_status in dict(Return.STATUS_CHOICES):
         if new_status == "Refunded" and current_status != "Refunded":
             user_profile = return_obj.order_item.order.user.userprofile
             wallet, created = Wallet.objects.get_or_create(user_profile=user_profile)
 
-            refund_amount = return_obj.order_item.price * return_obj.order_item.quantity
+            refund_amount = calculate_refund_for_item(
+                return_obj.order_item.order,
+                return_obj.order_item
+            )
 
             wallet.balance += refund_amount
             wallet.save()
@@ -651,6 +646,16 @@ def process_return(request, return_id):
         return_obj.processed_at = timezone.now()
         return_obj.save()
 
+        # --- Update order status if all items refunded ---
+        order = return_obj.order_item.order
+        all_items = order.items.all()
+        all_returned = all(Return.objects.filter(order_item=item, status="Refunded").exists() for item in all_items)
+        if all_returned:
+            order.status = "Returned"
+            order.payment_status = "Refunded"
+            order.save()
+        # --- End of update ---
+
         messages.success(request, f"Return status updated to {new_status}.")
 
         try:
@@ -664,9 +669,16 @@ def process_return(request, return_id):
 
 
 
+#coupon management
+
 def coupon_management(request):
     coupons = Coupon.objects.all()
-    return render(request, 'coupon_management.html', {'coupons': coupons})
+    paginator = Paginator(coupons, 10)  # Show 10 coupons per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'coupon_management.html', {'page_obj': page_obj})
+
 
 
 def add_coupon(request):
@@ -796,11 +808,17 @@ def sales_report(request):
 
     order_list = orders.order_by('-date').values('id', 'user__username', 'date', 'total', 'status')
 
+    #pagination
+    paginator = Paginator(order_list, 10)  # 10 per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     context = {
         'total_sales': total_sales,
         'total_orders': total_orders,
         'total_items_sold': total_items_sold,
-        'orders': order_list,
+        'orders': page_obj,      
+        'page_obj': page_obj,    
         'date_filter': date_filter or '',
         'month_filter': month_filter or '',
         'year_filter': year_filter or '',

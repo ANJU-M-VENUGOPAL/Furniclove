@@ -27,11 +27,10 @@ db.sqlite3
 *.sqlite3
 
 # Media files (user uploads)
-media/
+
 
 # Static files (auto-generated, can be rebuilt)
-staticfiles/
-static/
+
 
 # Django migrations (ignore pycache inside migrations, keep migration files)
 **/migrations/__pycache__/

@@ -13,24 +13,6 @@ class ColorVariantForm(forms.ModelForm):
         fields = ['color_name', 'color_code', 'main_image', 'stock', 'price_override']
 
 
-'''
-class CategoryForm(forms.ModelForm):
-    class Meta:
-        model = Category
-        fields = ['name', 'description', 'offer_percent']
-
-    def clean_name(self):
-        name = self.cleaned_data['name']
-        qs = Category.objects.filter(name__iexact=name)
-
-        if self.instance:
-            qs = qs.exclude(pk=self.instance.pk)
-
-        if qs.exists():
-            raise forms.ValidationError(f"Category '{name}' already exists.")
-        return name
-'''
-
 
 class CategoryForm(forms.ModelForm):
     class Meta:
