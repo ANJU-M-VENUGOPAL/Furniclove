@@ -4,74 +4,76 @@
 {% block title %}Add Variant{% endblock %}
 
 {% block content %}
-    <div class="card p-4 shadow-sm">
-        <h2 class="mb-4 text-primary">Add Variant for Product: {{ product.name }}</h2>
+<div class="card p-4 shadow-sm">
+    <h2 class="mb-4 text-primary">Add Variant for Product: {{ product.name }}</h2>
 
-        <form method="POST" enctype="multipart/form-data">
-            {% csrf_token %}
-            
-            <div class="form-group">
-                <label for="id_color_name">Color Name:</label>
-                {{ form.color_name }}
-            </div>
-            <div class="form-group">
-                <label for="id_color_code">Color Code:</label>
-                {{ form.color_code }}
-            </div>
-            <div class="form-group">
-                <label for="image">Main Image:</label>
-                <input type="file" class="form-control" id="image" name="image">
-                {% if variant.image %}
-                    <p>Current Image: <img src="{{ variant.image.url }}" width="100"></p>
-                {% endif %}
-            </div>
-            <div class="form-group">
-                <label for="thumbnail_2">Thumbnail 2:</label>
-                <input type="file" class="form-control" id="thumbnail_2" name="thumbnail_2">
-                {% if variant.thumbnail_2 %}
-                    <p>Current Thumbnail 2: <img src="{{ variant.thumbnail_1.url }}" width="50"></p>
-                {% endif %}
-            </div>
-            
-            <div class="form-group">
-                <label for="thumbnail_2">Thumbnail 2:</label>
-                <input type="file" class="form-control" id="thumbnail_2" name="thumbnail_2">
-                {% if variant.thumbnail_2 %}
-                    <p>Current Thumbnail 2: <img src="{{ variant.thumbnail_2.url }}" width="50"></p>
-                {% endif %}
-            </div>
-            
-            <div class="form-group">
-                <label for="thumbnail_3">Thumbnail 3:</label>
-                <input type="file" class="form-control" id="thumbnail_3" name="thumbnail_3">
-                {% if variant.thumbnail_3 %}
-                    <p>Current Thumbnail 3: <img src="{{ variant.thumbnail_3.url }}" width="50"></p>
-                {% endif %}
-            </div>
-            
-            <div class="form-group">
-                <label for="thumbnail_4">Thumbnail 4:</label>
-                <input type="file" class="form-control" id="thumbnail_4" name="thumbnail_4">
-                {% if variant.thumbnail_4 %}
-                    <p>Current Thumbnail 4: <img src="{{ variant.thumbnail_4.url }}" width="50"></p>
-                {% endif %}
-            </div>
-            <div class="form-group">
-                <label for="id_stock">Stock:</label>
-                {{ form.stock }}
-            </div>
-            <div class="form-group">
-                <label for="id_price_override">Price Override:</label>
-                {{ form.price_override }}
-            </div>
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
 
-            <button type="submit" class="btn btn-primary">Save Variant</button>
-        </form>
-
-        <div class="text-right mt-3">
-            <a href="{% url 'product_management' %}" class="btn btn-secondary">Back to Product Management</a>
+        {% if form.errors %}
+        <div class="alert alert-danger">
+            <ul>
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
         </div>
-    </div>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-{% endblock %}
+        {% endif %}
 
+        <div class="form-group">
+            <label>Color Name:</label>
+            {{ form.color_name }}
+        </div>
+
+        <div class="form-group">
+            <label>Color Code:</label>
+            {{ form.color_code }}
+        </div>
+
+        <div class="form-group">
+            <label>Main Image:</label>
+            {{ form.main_image }}
+        </div>
+
+        <div class="form-group">
+            <label>Thumbnail 1:</label>
+            {{ form.thumbnail_1 }}
+        </div>
+
+        <div class="form-group">
+            <label>Thumbnail 2:</label>
+            {{ form.thumbnail_2 }}
+        </div>
+
+        <div class="form-group">
+            <label>Thumbnail 3:</label>
+            {{ form.thumbnail_3 }}
+        </div>
+
+        <div class="form-group">
+            <label>Thumbnail 4:</label>
+            {{ form.thumbnail_4 }}
+        </div>
+
+        <div class="form-group">
+            <label>Stock:</label>
+            {{ form.stock }}
+        </div>
+
+        <div class="form-group">
+            <label>Price Override:</label>
+            {{ form.price_override }}
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save Variant</button>
+    </form>
+
+    <div class="text-right mt-3">
+        <a href="{% url 'product_management' %}" class="btn btn-secondary">Back to Product Management</a>
+    </div>
+</div>
+
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}

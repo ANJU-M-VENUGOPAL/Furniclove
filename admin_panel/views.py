@@ -391,6 +391,7 @@ def add_variant(request, product_id):
     return render(request, 'add_variant.html', {'form': form, 'product': product})
 
 
+
 # edit variant
 def edit_variant(request, variant_id):
     

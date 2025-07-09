@@ -10,7 +10,7 @@ class ProductForm(forms.ModelForm):
 class ColorVariantForm(forms.ModelForm):
     class Meta:
         model = ColorVariant
-        fields = ['color_name', 'color_code', 'main_image', 'stock', 'price_override']
+        fields = ['color_name', 'color_code', 'main_image','thumbnail_1', 'thumbnail_2', 'thumbnail_3', 'thumbnail_4', 'stock', 'price_override']
 
 
 
